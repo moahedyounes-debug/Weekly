@@ -1,14 +1,369 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Weekly</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="canonical" href="https://moahedyounes-debug.github.io/Weekly/">
-<meta http-equiv="refresh" content="0; url=https://moahedyounes-debug.github.io/Weekly/">
-<script>window.location.replace("https://moahedyounes-debug.github.io/Weekly/");</script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Service Weekly KT Tracker</title>
+<meta name="description" content="Interactive dashboard for task status, completion, and team performance." />
+<link rel="canonical" href="https://moahedyounes-debug.github.io/Weekly.html" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root{
+    --bg:#f8fafc; --card:#ffffff; --border:#e5e7eb; --fg:#0f172a; --muted:#64748b;
+    --done:#22c55e; --inproc:#f59e0b; --new:#3b82f6; --bar:#0f172a;
+  }
+  html,body{background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .chip{padding:.4rem .9rem;border-radius:9999px;font-size:.875rem;color:#334155}
+  .chip.active{background:#f1f5f9;color:#0f172a;font-weight:600}
+  select,input{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.55rem .75rem;font-size:.9rem;width:100%}
+  select:focus,input:focus{outline:none;border-color:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.25)}
+  .bar-track{height:10px;background:#e5e7eb;border-radius:9999px;overflow:hidden}
+  .bar-fill{height:100%;background:#0f172a;border-radius:9999px;transition:width .5s ease}
+  table{width:100%;border-collapse:collapse;font-size:.875rem}
+  th,td{padding:.6rem .75rem;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#f8fafc;font-weight:600;color:#334155;position:sticky;top:0}
+  .badge{display:inline-block;padding:.15rem .55rem;border-radius:9999px;font-size:.72rem;font-weight:600}
+  .badge-done{background:rgba(34,197,94,.12);color:#15803d}
+  .badge-proc{background:rgba(245,158,11,.15);color:#b45309}
+  .badge-new{background:rgba(59,130,246,.12);color:#1d4ed8}
+  .loader{width:28px;height:28px;border:3px solid #cbd5e1;border-top-color:#0f172a;border-radius:50%;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
-<p>Redirecting to <a href="https://moahedyounes-debug.github.io/Weekly/">Weekly</a>…</p>
+<div class="min-h-screen p-4 md:p-8">
+  <div class="mx-auto max-w-7xl space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Service Weekly KT Tracker</h1>
+        <p class="text-slate-500 mt-1">Interactive dashboard for task status, completion, and team performance.</p>
+      </div>
+      <button id="refreshBtn" class="inline-flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        Refresh Data
+      </button>
+    </div>
+
+    <div id="loadingState" class="card p-10 flex items-center justify-center gap-3">
+      <div class="loader"></div><span class="text-slate-600">Loading Google Sheet…</span>
+    </div>
+    <div id="errorState" class="hidden card p-6 border-red-200 bg-red-50 text-red-700"></div>
+
+    <div id="app" class="hidden space-y-6">
+
+      <!-- KPI cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Total Tasks</p><p id="kpiTotal" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-slate-100"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><rect x="3" y="4" width="6" height="6" rx="1"/></svg></div></div></div>
+        <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Completed</p><p id="kpiDone" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-green-100 text-green-600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div></div></div>
+        <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">In Process</p><p id="kpiProc" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-amber-100 text-amber-600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div></div>
+        <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">New</p><p id="kpiNew" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-blue-100 text-blue-600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M3 12h18"/></svg></div></div></div>
+      </div>
+
+      <!-- Overall completion -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold text-lg">Overall Completion</h3>
+          <span id="overallPct" class="text-3xl font-bold">0%</span>
+        </div>
+        <div class="mt-4 bar-track"><div id="overallBar" class="bar-fill" style="width:0%"></div></div>
+        <p id="overallSub" class="text-sm text-slate-500 mt-2">0 of 0 tasks completed</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="card p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <input id="fSearch" placeholder="Search task, action, remarks…" />
+        <select id="fPic"><option value="">All PICs</option></select>
+        <select id="fMod"><option value="">All Modules</option></select>
+        <select id="fStat"><option value="">All Status</option></select>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+        <button class="tab chip active" data-tab="overview">Overview</button>
+        <button class="tab chip" data-tab="team">Team Performance</button>
+        <button class="tab chip" data-tab="weeks">Weekly Trends</button>
+        <button class="tab chip" data-tab="tasks">Task Tracker</button>
+      </div>
+
+      <!-- Overview tab -->
+      <div data-pane="overview" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card p-6"><h3 class="font-semibold mb-4">Status Distribution</h3><div style="height:340px"><canvas id="chartStatus"></canvas></div></div>
+        <div class="card p-6"><h3 class="font-semibold mb-4">Tasks by Module (% completion)</h3><div style="height:340px"><canvas id="chartModule"></canvas></div></div>
+      </div>
+
+      <!-- Team tab -->
+      <div data-pane="team" class="hidden card p-6">
+        <h3 class="font-semibold mb-4">Team Performance (% completion per PIC)</h3>
+        <div style="height:380px"><canvas id="chartTeam"></canvas></div>
+      </div>
+
+      <!-- Weeks tab -->
+      <div data-pane="weeks" class="hidden card p-6">
+        <h3 class="font-semibold mb-4">Weekly Trends (% completion per source week)</h3>
+        <div style="height:380px"><canvas id="chartWeek"></canvas></div>
+      </div>
+
+      <!-- Tasks tab -->
+      <div data-pane="tasks" class="hidden card overflow-hidden">
+        <div class="overflow-x-auto" style="max-height:560px">
+          <table>
+            <thead><tr><th>Module</th><th>PIC</th><th>Action</th><th>Status</th><th>Remarks</th><th>Week</th><th>Due</th></tr></thead>
+            <tbody id="taskBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-400 text-center pt-2">Data source: Google Sheet · last updated <span id="updatedAt"></span></p>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
+Chart.register(ChartDataLabels);
+Chart.defaults.font.family = "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto";
+Chart.defaults.color = "#334155";
+
+const COLORS = { done:"#22c55e", proc:"#f59e0b", new:"#3b82f6", bar:"#0f172a", muted:"#cbd5e1" };
+let RAW = [];
+let charts = {};
+
+function normStatus(s){
+  const v=(s||"").trim().toLowerCase();
+  if(v==="done"||v==="completed"||v==="complete") return "Done";
+  if(v.startsWith("in")||v==="process"||v==="ongoing") return "In process";
+  if(v==="new"||v==="pending"||v==="open") return "New";
+  if(!v) return "New";
+  return s.trim();
+}
+
+async function load(){
+  document.getElementById("errorState").classList.add("hidden");
+  document.getElementById("loadingState").classList.remove("hidden");
+  document.getElementById("app").classList.add("hidden");
+  try{
+    const res = await fetch(SHEET_URL + "&_=" + Date.now());
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const text = await res.text();
+    const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
+    RAW = parsed.data.map(r => ({
+      openTime: r["Open Time"] || "",
+      module: (r["Module"]||"").trim() || "—",
+      question: r["Question"]||"",
+      pic: (r["PIC"]||"").trim() || "—",
+      action: r["Management Action"]||"",
+      due: r["Completion Time"]||"",
+      status: normStatus(r["Status"]),
+      remarks: r["Remarks"]||"",
+      description: r["Description"]||"",
+      newTasks: r["New Tasks"]||"",
+      week: (r["Source Week"]||"").trim() || "—",
+      done: (r["Done? (\u2713)"]||"").toString().toUpperCase()==="TRUE"
+    })).filter(r=>r.module!=="—"||r.pic!=="—"||r.action);
+    initFilters();
+    render();
+    document.getElementById("loadingState").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    document.getElementById("updatedAt").textContent = new Date().toLocaleString();
+  }catch(e){
+    document.getElementById("loadingState").classList.add("hidden");
+    const er = document.getElementById("errorState");
+    er.textContent = "Failed to load sheet: "+e.message+". Make sure the sheet is shared as 'Anyone with the link can view'.";
+    er.classList.remove("hidden");
+  }
+}
+
+function uniq(arr){ return [...new Set(arr.filter(Boolean))].sort(); }
+function initFilters(){
+  fillSelect("fPic", uniq(RAW.map(r=>r.pic)));
+  fillSelect("fMod", uniq(RAW.map(r=>r.module)));
+  fillSelect("fStat", uniq(RAW.map(r=>r.status)));
+}
+function fillSelect(id, vals){
+  const el = document.getElementById(id);
+  const first = el.querySelector("option");
+  el.innerHTML = "";
+  el.appendChild(first);
+  vals.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
+}
+
+function filtered(){
+  const s = document.getElementById("fSearch").value.toLowerCase().trim();
+  const p = document.getElementById("fPic").value;
+  const m = document.getElementById("fMod").value;
+  const st = document.getElementById("fStat").value;
+  return RAW.filter(r=>{
+    if(p && r.pic!==p) return false;
+    if(m && r.module!==m) return false;
+    if(st && r.status!==st) return false;
+    if(s){
+      const hay = (r.question+" "+r.action+" "+r.remarks+" "+r.description).toLowerCase();
+      if(!hay.includes(s)) return false;
+    }
+    return true;
+  });
+}
+
+function groupCount(arr, key){
+  const m = {};
+  arr.forEach(r=>{ const k=r[key]||"—"; m[k]=(m[k]||0)+1; });
+  return m;
+}
+function completionByKey(arr, key){
+  const total={}, done={};
+  arr.forEach(r=>{
+    const k=r[key]||"—";
+    total[k]=(total[k]||0)+1;
+    if(r.status==="Done") done[k]=(done[k]||0)+1;
+  });
+  const labels=Object.keys(total).sort();
+  return {
+    labels,
+    pct: labels.map(l=> total[l]? Math.round((done[l]||0)/total[l]*100):0),
+    done: labels.map(l=> done[l]||0),
+    total: labels.map(l=> total[l])
+  };
+}
+
+function render(){
+  const data = filtered();
+  const total = data.length;
+  const counts = groupCount(data,"status");
+  const d = counts["Done"]||0, ip = counts["In process"]||0, nw = counts["New"]||0;
+  document.getElementById("kpiTotal").textContent = total;
+  document.getElementById("kpiDone").textContent = d;
+  document.getElementById("kpiProc").textContent = ip;
+  document.getElementById("kpiNew").textContent = nw;
+  const pct = total? Math.round(d/total*100):0;
+  document.getElementById("overallPct").textContent = pct+"%";
+  document.getElementById("overallBar").style.width = pct+"%";
+  document.getElementById("overallSub").textContent = `${d} of ${total} tasks completed`;
+
+  renderStatus(counts, total);
+  renderModule(data);
+  renderTeam(data);
+  renderWeek(data);
+  renderTable(data);
+}
+
+function destroyChart(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } }
+
+function renderStatus(counts,total){
+  destroyChart("status");
+  const labels = Object.keys(counts);
+  const values = labels.map(l=>counts[l]);
+  const color = l => l==="Done"?COLORS.done : l==="In process"?COLORS.proc : l==="New"?COLORS.new : "#94a3b8";
+  charts.status = new Chart(document.getElementById("chartStatus"),{
+    type:"doughnut",
+    data:{ labels, datasets:[{ data:values, backgroundColor: labels.map(color), borderWidth:2, borderColor:"#fff" }] },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:"55%",
+      plugins:{
+        legend:{ position:"bottom" },
+        tooltip:{ callbacks:{ label: c => `${c.label}: ${c.parsed} (${total? Math.round(c.parsed/total*100):0}%)` } },
+        datalabels:{
+          color:"#fff", font:{weight:"bold",size:13},
+          formatter:(v)=> total? Math.round(v/total*100)+"%":""
+        }
+      }
+    }
+  });
+}
+
+function renderModule(data){
+  destroyChart("module");
+  const c = completionByKey(data,"module");
+  charts.module = new Chart(document.getElementById("chartModule"),{
+    type:"bar",
+    data:{ labels:c.labels, datasets:[{ label:"% Done", data:c.pct, backgroundColor:COLORS.done, borderRadius:6 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+"%" } } },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label:c=>`${c.parsed.y}% (${c.dataIndex!==undefined? '':''})` , afterLabel:c=>`Done ${ (charts.module.data.datasets[0]._done||[])[c.dataIndex]||""}`}},
+        datalabels:{ anchor:"end", align:"top", color:"#0f172a", font:{weight:"bold"}, formatter:v=>v+"%" }
+      }
+    }
+  });
+  charts.module.data.datasets[0]._done = c.done;
+}
+
+function renderTeam(data){
+  destroyChart("team");
+  const c = completionByKey(data,"pic");
+  charts.team = new Chart(document.getElementById("chartTeam"),{
+    type:"bar",
+    data:{ labels:c.labels, datasets:[{ label:"% Done", data:c.pct, backgroundColor:COLORS.new, borderRadius:6 }] },
+    options:{
+      indexAxis:"y", responsive:true, maintainAspectRatio:false,
+      scales:{ x:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+"%" } } },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=> `${ctx.parsed.x}% — ${c.done[ctx.dataIndex]}/${c.total[ctx.dataIndex]} done` } },
+        datalabels:{ anchor:"end", align:"right", color:"#0f172a", font:{weight:"bold"}, formatter:v=>v+"%" }
+      }
+    }
+  });
+}
+
+function renderWeek(data){
+  destroyChart("week");
+  const c = completionByKey(data,"week");
+  charts.week = new Chart(document.getElementById("chartWeek"),{
+    type:"line",
+    data:{ labels:c.labels, datasets:[{
+      label:"% Done", data:c.pct, borderColor:COLORS.proc, backgroundColor:"rgba(245,158,11,.15)",
+      fill:true, tension:.35, pointRadius:5, pointBackgroundColor:COLORS.proc
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+"%" } } },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=> `${ctx.parsed.y}% — ${c.done[ctx.dataIndex]}/${c.total[ctx.dataIndex]} done` } },
+        datalabels:{ align:"top", color:"#0f172a", font:{weight:"bold"}, formatter:v=>v+"%" }
+      }
+    }
+  });
+}
+
+function badge(s){
+  if(s==="Done") return '<span class="badge badge-done">Done</span>';
+  if(s==="In process") return '<span class="badge badge-proc">In process</span>';
+  return '<span class="badge badge-new">'+s+'</span>';
+}
+function renderTable(data){
+  const tb = document.getElementById("taskBody");
+  tb.innerHTML = data.map(r=>`<tr>
+    <td>${r.module}</td><td>${r.pic}</td><td>${(r.action||"").replace(/</g,"&lt;")}</td>
+    <td>${badge(r.status)}</td><td>${(r.remarks||"").replace(/</g,"&lt;")}</td>
+    <td>${r.week}</td><td>${r.due||""}</td>
+  </tr>`).join("") || `<tr><td colspan="7" class="text-center text-slate-400 py-8">No tasks match the filters.</td></tr>`;
+}
+
+// Tabs
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const t = btn.dataset.tab;
+    document.querySelectorAll("[data-pane]").forEach(p=>p.classList.toggle("hidden", p.dataset.pane!==t));
+  });
+});
+// Filter listeners
+["fSearch","fPic","fMod","fStat"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+document.getElementById("refreshBtn").addEventListener("click",load);
+
+load();
+</script>
 </body>
 </html>
