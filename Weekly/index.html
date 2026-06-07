@@ -26,14 +26,25 @@
   .action-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
   .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.5rem;padding:.55rem .9rem;font-size:.875rem;font-weight:500;border:1px solid var(--border);text-decoration:none}
   .btn-primary{background:#0f172a;color:#fff;border-color:#0f172a}.btn-outline{background:#fff;color:#0f172a}.btn:disabled{opacity:.6;cursor:not-allowed}
-  table{width:100%;border-collapse:collapse;font-size:.875rem}
-  th,td{padding:.6rem .75rem;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  table{width:100%;border-collapse:collapse;font-size:.875rem;table-layout:auto}
+  th,td{padding:.6rem .75rem;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
   th{background:#f8fafc;font-weight:600;color:#334155;position:sticky;top:0}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{background:#f1f5f9}
+  th .sort-ind{opacity:.35;margin-left:.25rem;font-size:.7rem}
+  th.sort-asc .sort-ind, th.sort-desc .sort-ind{opacity:1;color:#0f172a}
   .badge{display:inline-block;padding:.15rem .55rem;border-radius:9999px;font-size:.72rem;font-weight:600}
   .badge-done{background:rgba(34,197,94,.12);color:#15803d}
   .badge-proc{background:rgba(245,158,11,.15);color:#b45309}
   .badge-new{background:rgba(59,130,246,.12);color:#1d4ed8}
   .team-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin-top:1rem}.mini-bar{height:8px;background:#e5e7eb;border-radius:9999px;overflow:hidden}.mini-fill{height:100%;background:#0f172a;border-radius:9999px}.status-select{width:135px;padding:.35rem .5rem;border-radius:.5rem;color:#fff;font-weight:600;border:0}.done-row{opacity:.6}.done-row .task-text{text-decoration:line-through}
+  .remarks-input{width:100%;min-width:180px;border:1px solid transparent;background:transparent;padding:.3rem .4rem;border-radius:.4rem;font:inherit;color:inherit;resize:vertical;min-height:2.2rem}
+  .remarks-input:hover{border-color:#e5e7eb;background:#fff}
+  .remarks-input:focus{outline:none;border-color:#94a3b8;background:#fff;box-shadow:0 0 0 3px rgba(148,163,184,.25)}
+  #syncBadge{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;padding:.2rem .6rem;border-radius:9999px;background:#f1f5f9;color:#475569}
+  #syncBadge.saving{background:#fef3c7;color:#92400e}
+  #syncBadge.ok{background:#dcfce7;color:#166534}
+  #syncBadge.err{background:#fee2e2;color:#991b1b}
   .loader{width:28px;height:28px;border:3px solid #cbd5e1;border-top-color:#0f172a;border-radius:50%;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
