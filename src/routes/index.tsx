@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import rawTasks from "@/data/tasks.json";
+import { useEffect, useMemo, useState } from "react";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { fetchTasksFromSheet, type SheetTask } from "@/lib/tasks.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -14,8 +15,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   LineChart, Line,
 } from "recharts";
-import { CheckCircle2, Clock, Sparkles, ListTodo, Download, TrendingUp } from "lucide-react";
+import { CheckCircle2, Clock, Sparkles, ListTodo, Download, TrendingUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const tasksQueryOptions = queryOptions({
+  queryKey: ["sheet-tasks"],
+  queryFn: () => fetchTasksFromSheet(),
+  staleTime: 60_000,
+});
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,22 +31,17 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Interactive tracker for completed, pending, and in-process tasks with team performance." },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(tasksQueryOptions),
+  errorComponent: ({ error }) => (
+    <div className="p-8 text-destructive">Failed to load sheet: {error.message}</div>
+  ),
   component: Dashboard,
 });
 
-type Task = {
-  openTime: string | null;
-  module: string | null;
-  question: string | null;
-  pic: string | null;
-  action: string | null;
-  completionTime: string | null;
-  status: string | null;
-  remarks: string | null;
-  description: string | null;
-  newTasks: string | null;
-  sourceWeek: string | null;
-};
+function normalizeStatus(s: string | null, done: boolean): string {
+  if (done) return "Done";
+  return s || "New";
+}
 
 const STATUS_COLORS: Record<string, string> = {
   Done: "hsl(142 71% 45%)",
@@ -48,23 +50,22 @@ const STATUS_COLORS: Record<string, string> = {
   Pending: "hsl(0 84% 60%)",
 };
 
-function normalizeStatus(s: string | null, done: boolean): string {
-  if (done) return "Done";
-  return s || "New";
-}
-
 function Dashboard() {
-  const initial = rawTasks as Task[];
-  const [tasks, setTasks] = useState(
-    initial.map((t, i) => ({ ...t, id: i, done: (t.status || "").toLowerCase() === "done" }))
+  const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
+  const [tasks, setTasks] = useState(() =>
+    initial.map((t, i) => ({ ...t, id: i }))
   );
+  useEffect(() => {
+    setTasks(initial.map((t, i) => ({ ...t, id: i })));
+  }, [initial]);
+
   const [search, setSearch] = useState("");
   const [pic, setPic] = useState<string>("all");
   const [module, setModule] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
 
-  const pics = useMemo(() => Array.from(new Set(initial.map(t => t.pic).filter(Boolean))) as string[], [initial]);
-  const modules = useMemo(() => Array.from(new Set(initial.map(t => t.module).filter(Boolean))) as string[], [initial]);
+  const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
+  const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
@@ -176,11 +177,16 @@ function Dashboard() {
               Interactive dashboard for task status, completion, and team performance.
             </p>
           </div>
-          <Button asChild>
-            <a href="/Service_KT_Interactive_Dashboard.xlsx" download>
-              <Download className="h-4 w-4 mr-2" /> Download Excel Dashboard
-            </a>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Sync Sheet
+            </Button>
+            <Button asChild>
+              <a href="/Service_KT_Interactive_Dashboard.xlsx" download>
+                <Download className="h-4 w-4 mr-2" /> Download Excel
+              </a>
+            </Button>
+          </div>
         </header>
 
         {/* KPI cards */}
