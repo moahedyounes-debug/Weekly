@@ -201,6 +201,7 @@ async function load(){
     const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
     RAW = parsed.data.map((r, idx) => ({
       id: idx,
+      sheetRow: idx + 2, // header is row 1
       openTime: r["Open Time"] || "",
       module: (r["Module"]||"").trim() || "—",
       question: r["Question"]||"",
