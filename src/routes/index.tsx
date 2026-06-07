@@ -38,19 +38,10 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-type Task = {
-  openTime: string | null;
-  module: string | null;
-  question: string | null;
-  pic: string | null;
-  action: string | null;
-  completionTime: string | null;
-  status: string | null;
-  remarks: string | null;
-  description: string | null;
-  newTasks: string | null;
-  sourceWeek: string | null;
-};
+function normalizeStatus(s: string | null, done: boolean): string {
+  if (done) return "Done";
+  return s || "New";
+}
 
 const STATUS_COLORS: Record<string, string> = {
   Done: "hsl(142 71% 45%)",
@@ -59,23 +50,22 @@ const STATUS_COLORS: Record<string, string> = {
   Pending: "hsl(0 84% 60%)",
 };
 
-function normalizeStatus(s: string | null, done: boolean): string {
-  if (done) return "Done";
-  return s || "New";
-}
-
 function Dashboard() {
-  const initial = rawTasks as Task[];
-  const [tasks, setTasks] = useState(
-    initial.map((t, i) => ({ ...t, id: i, done: (t.status || "").toLowerCase() === "done" }))
+  const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
+  const [tasks, setTasks] = useState(() =>
+    initial.map((t, i) => ({ ...t, id: i }))
   );
+  useEffect(() => {
+    setTasks(initial.map((t, i) => ({ ...t, id: i })));
+  }, [initial]);
+
   const [search, setSearch] = useState("");
   const [pic, setPic] = useState<string>("all");
   const [module, setModule] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
 
-  const pics = useMemo(() => Array.from(new Set(initial.map(t => t.pic).filter(Boolean))) as string[], [initial]);
-  const modules = useMemo(() => Array.from(new Set(initial.map(t => t.module).filter(Boolean))) as string[], [initial]);
+  const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
+  const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
