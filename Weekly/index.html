@@ -160,6 +160,8 @@ function normStatus(s){
   if(!v) return "New";
   return s.trim();
 }
+function effectiveStatus(r){ return r.done ? "Done" : normStatus(r.status); }
+function esc(v){ return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
 async function load(){
   document.getElementById("errorState").classList.add("hidden");
@@ -170,7 +172,8 @@ async function load(){
     if(!res.ok) throw new Error("HTTP "+res.status);
     const text = await res.text();
     const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
-    RAW = parsed.data.map(r => ({
+    RAW = parsed.data.map((r, idx) => ({
+      id: idx,
       openTime: r["Open Time"] || "",
       module: (r["Module"]||"").trim() || "—",
       question: r["Question"]||"",
@@ -219,7 +222,7 @@ function filtered(){
   return RAW.filter(r=>{
     if(p && r.pic!==p) return false;
     if(m && r.module!==m) return false;
-    if(st && r.status!==st) return false;
+    if(st && effectiveStatus(r)!==st) return false;
     if(s){
       const hay = (r.question+" "+r.action+" "+r.remarks+" "+r.description).toLowerCase();
       if(!hay.includes(s)) return false;
@@ -238,7 +241,7 @@ function completionByKey(arr, key){
   arr.forEach(r=>{
     const k=r[key]||"—";
     total[k]=(total[k]||0)+1;
-    if(r.status==="Done") done[k]=(done[k]||0)+1;
+    if(effectiveStatus(r)==="Done") done[k]=(done[k]||0)+1;
   });
   const labels=Object.keys(total).sort();
   return {
@@ -252,7 +255,8 @@ function completionByKey(arr, key){
 function render(){
   const data = filtered();
   const total = data.length;
-  const counts = groupCount(data,"status");
+  const counts = {};
+  data.forEach(r=>{ const s=effectiveStatus(r); counts[s]=(counts[s]||0)+1; });
   const d = counts["Done"]||0, ip = counts["In process"]||0, nw = counts["New"]||0;
   document.getElementById("kpiTotal").textContent = total;
   document.getElementById("kpiDone").textContent = d;
@@ -267,6 +271,9 @@ function render(){
   renderModule(data);
   renderTeam(data);
   renderWeek(data);
+  renderWeekMix(data);
+  renderPicWeek(data);
+  renderWeekTable(data);
   renderTable(data);
 }
 
