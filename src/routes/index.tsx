@@ -12,8 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LineChart, Line,
 } from "recharts";
-import { CheckCircle2, Clock, Sparkles, ListTodo } from "lucide-react";
+import { CheckCircle2, Clock, Sparkles, ListTodo, Download, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -119,18 +121,66 @@ function Dashboard() {
     return Array.from(map.values());
   }, [filtered]);
 
+  const weeks = useMemo(
+    () => Array.from(new Set(initial.map(t => t.sourceWeek).filter(Boolean))).sort() as string[],
+    [initial]
+  );
+
+  const weeklyTrend = useMemo(() => {
+    return weeks.map(w => {
+      const wt = filtered.filter(t => t.sourceWeek === w);
+      const done = wt.filter(t => normalizeStatus(t.status, t.done) === "Done").length;
+      const inProc = wt.filter(t => normalizeStatus(t.status, t.done) === "In process").length;
+      const news = wt.filter(t => normalizeStatus(t.status, t.done) === "New").length;
+      return {
+        week: w,
+        Done: done,
+        "In process": inProc,
+        New: news,
+        Total: wt.length,
+        Completion: wt.length ? Math.round((done / wt.length) * 100) : 0,
+      };
+    });
+  }, [filtered, weeks]);
+
+  const weeklyByPic = useMemo(() => {
+    // [{ week, [pic]: completion% }, ...]
+    return weeks.map(w => {
+      const row: Record<string, string | number> = { week: w };
+      pics.forEach(p => {
+        const wt = filtered.filter(t => t.sourceWeek === w && t.pic === p);
+        const done = wt.filter(t => normalizeStatus(t.status, t.done) === "Done").length;
+        row[p] = wt.length ? Math.round((done / wt.length) * 100) : 0;
+      });
+      return row;
+    });
+  }, [filtered, weeks, pics]);
+
   const toggleDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
   };
 
+  const setStatusFor = (id: number, value: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: value, done: value === "Done" } : t));
+  };
+
+  const picColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Service Weekly KT Tracker</h1>
-          <p className="text-muted-foreground">
-            Interactive dashboard for task status, completion, and team performance.
-          </p>
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Service Weekly KT Tracker</h1>
+            <p className="text-muted-foreground">
+              Interactive dashboard for task status, completion, and team performance.
+            </p>
+          </div>
+          <Button asChild>
+            <a href="/Service_KT_Interactive_Dashboard.xlsx" download>
+              <Download className="h-4 w-4 mr-2" /> Download Excel Dashboard
+            </a>
+          </Button>
         </header>
 
         {/* KPI cards */}
@@ -191,6 +241,7 @@ function Dashboard() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="performance">Team Performance</TabsTrigger>
+            <TabsTrigger value="trends">Weekly Trends</TabsTrigger>
             <TabsTrigger value="tasks">Task Tracker</TabsTrigger>
           </TabsList>
 
@@ -267,10 +318,102 @@ function Dashboard() {
             </div>
           </TabsContent>
 
+          <TabsContent value="trends" className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" /> Completion % Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={weeklyTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis domain={[0, 100]} unit="%" />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="Completion" stroke="hsl(217 91% 60%)" strokeWidth={3} dot={{ r: 5 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle>Status Mix by Week</CardTitle></CardHeader>
+                <CardContent style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="Done" stackId="a" fill={STATUS_COLORS.Done} />
+                      <Bar dataKey="In process" stackId="a" fill={STATUS_COLORS["In process"]} />
+                      <Bar dataKey="New" stackId="a" fill={STATUS_COLORS.New} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+            <Card>
+              <CardHeader><CardTitle>Employee Completion % by Week</CardTitle></CardHeader>
+              <CardContent style={{ height: 360 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weeklyByPic}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis domain={[0, 100]} unit="%" />
+                    <Tooltip />
+                    <Legend />
+                    {pics.map((p, i) => (
+                      <Line key={p} type="monotone" dataKey={p} stroke={picColors[i % picColors.length]} strokeWidth={2} dot={{ r: 4 }} />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Weekly Summary</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Week</TableHead>
+                      <TableHead className="text-center">Total</TableHead>
+                      <TableHead className="text-center">Done</TableHead>
+                      <TableHead className="text-center">In Process</TableHead>
+                      <TableHead className="text-center">New</TableHead>
+                      <TableHead>Completion</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {weeklyTrend.map(w => (
+                      <TableRow key={w.week}>
+                        <TableCell className="font-semibold">{w.week}</TableCell>
+                        <TableCell className="text-center">{w.Total}</TableCell>
+                        <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS.Done, color: "white" }}>{w.Done}</Badge></TableCell>
+                        <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS["In process"], color: "white" }}>{w["In process"]}</Badge></TableCell>
+                        <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS.New, color: "white" }}>{w.New}</Badge></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={w.Completion} className="h-2 w-32" />
+                            <span className="text-sm font-medium">{w.Completion}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="tasks">
             <Card>
               <CardHeader>
-                <CardTitle>Task Tracker — tick to mark done</CardTitle>
+                <CardTitle>Task Tracker — set status inline</CardTitle>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
@@ -298,7 +441,19 @@ function Dashboard() {
                           <TableCell>{t.pic}</TableCell>
                           <TableCell className="max-w-sm text-sm text-muted-foreground">{t.action}</TableCell>
                           <TableCell>
-                            <Badge style={{ background: STATUS_COLORS[eff], color: "white" }}>{eff}</Badge>
+                            <Select value={eff} onValueChange={(v) => setStatusFor(t.id, v)}>
+                              <SelectTrigger
+                                className="h-8 w-32 border-0 font-medium text-white"
+                                style={{ background: STATUS_COLORS[eff] }}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Done">Done</SelectItem>
+                                <SelectItem value="In process">In Process</SelectItem>
+                                <SelectItem value="New">New</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell>{t.sourceWeek}</TableCell>
                         </TableRow>
