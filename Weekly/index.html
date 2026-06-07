@@ -235,6 +235,7 @@ async function load(){
       week: (r["Source Week"]||"").trim() || "—",
       done: (r["Done? (\u2713)"]||"").toString().toUpperCase()==="TRUE"
     })).filter(r=>r.module!=="—"||r.pic!=="—"||r.action);
+    window.__rows = RAW;
     initFilters();
     render();
     document.getElementById("loadingState").classList.add("hidden");
