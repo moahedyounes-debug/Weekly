@@ -169,11 +169,18 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Service Weekly KT Tracker</h1>
-          <p className="text-muted-foreground">
-            Interactive dashboard for task status, completion, and team performance.
-          </p>
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Service Weekly KT Tracker</h1>
+            <p className="text-muted-foreground">
+              Interactive dashboard for task status, completion, and team performance.
+            </p>
+          </div>
+          <Button asChild>
+            <a href="/Service_KT_Interactive_Dashboard.xlsx" download>
+              <Download className="h-4 w-4 mr-2" /> Download Excel Dashboard
+            </a>
+          </Button>
         </header>
 
         {/* KPI cards */}
