@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import rawTasks from "@/data/tasks.json";
+import { useEffect, useMemo, useState } from "react";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { fetchTasksFromSheet, type SheetTask } from "@/lib/tasks.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -14,8 +15,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   LineChart, Line,
 } from "recharts";
-import { CheckCircle2, Clock, Sparkles, ListTodo, Download, TrendingUp } from "lucide-react";
+import { CheckCircle2, Clock, Sparkles, ListTodo, Download, TrendingUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const tasksQueryOptions = queryOptions({
+  queryKey: ["sheet-tasks"],
+  queryFn: () => fetchTasksFromSheet(),
+  staleTime: 60_000,
+});
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,6 +31,10 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Interactive tracker for completed, pending, and in-process tasks with team performance." },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(tasksQueryOptions),
+  errorComponent: ({ error }) => (
+    <div className="p-8 text-destructive">Failed to load sheet: {error.message}</div>
+  ),
   component: Dashboard,
 });
 
