@@ -241,6 +241,7 @@ function Dashboard() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="performance">Team Performance</TabsTrigger>
+            <TabsTrigger value="trends">Weekly Trends</TabsTrigger>
             <TabsTrigger value="tasks">Task Tracker</TabsTrigger>
           </TabsList>
 
