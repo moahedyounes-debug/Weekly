@@ -12,8 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LineChart, Line,
 } from "recharts";
-import { CheckCircle2, Clock, Sparkles, ListTodo } from "lucide-react";
+import { CheckCircle2, Clock, Sparkles, ListTodo, Download, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
