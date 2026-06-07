@@ -26,13 +26,16 @@
   .action-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
   .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.5rem;padding:.55rem .9rem;font-size:.875rem;font-weight:500;border:1px solid var(--border);text-decoration:none}
   .btn-primary{background:#0f172a;color:#fff;border-color:#0f172a}.btn-outline{background:#fff;color:#0f172a}.btn:disabled{opacity:.6;cursor:not-allowed}
-  table{width:100%;border-collapse:collapse;font-size:.875rem;table-layout:auto}
-  th,td{padding:.6rem .75rem;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
-  th{background:#f8fafc;font-weight:600;color:#334155;position:sticky;top:0}
-  th.sortable{cursor:pointer;user-select:none}
-  th.sortable:hover{background:#f1f5f9}
-  th .sort-ind{opacity:.35;margin-left:.25rem;font-size:.7rem}
-  th.sort-asc .sort-ind, th.sort-desc .sort-ind{opacity:1;color:#0f172a}
+   table{width:100%;border-collapse:collapse;font-size:.875rem;table-layout:auto}
+   #taskTable{table-layout:fixed;min-width:980px}
+   th,td{padding:.6rem .75rem;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+   th{background:#f8fafc;font-weight:600;color:#334155;position:sticky;top:0;position:relative}
+   th.sortable{cursor:pointer;user-select:none}
+   th.sortable:hover{background:#f1f5f9}
+   th .sort-ind{opacity:.35;margin-left:.25rem;font-size:.7rem}
+   th.sort-asc .sort-ind, th.sort-desc .sort-ind{opacity:1;color:#0f172a}
+   .col-resizer{position:absolute;top:0;right:0;width:6px;height:100%;cursor:col-resize;user-select:none;z-index:5}
+   .col-resizer:hover,.col-resizer.active{background:#94a3b8}
   .badge{display:inline-block;padding:.15rem .55rem;border-radius:9999px;font-size:.72rem;font-weight:600}
   .badge-done{background:rgba(34,197,94,.12);color:#15803d}
   .badge-proc{background:rgba(245,158,11,.15);color:#b45309}
@@ -143,6 +146,9 @@
         </div>
         <div class="overflow-x-auto" style="max-height:640px">
           <table id="taskTable">
+            <colgroup>
+              <col style="width:42px"><col style="width:80px"><col style="width:120px"><col style="width:280px"><col style="width:150px"><col style="width:240px"><col style="width:70px"><col style="width:110px">
+            </colgroup>
             <thead><tr>
               <th></th>
               <th class="sortable" data-sort="module">Module<span class="sort-ind">↕</span></th>
@@ -555,6 +561,40 @@ document.querySelectorAll(".tab").forEach(btn=>{
 // Filter listeners
 ["fSearch","fPic","fMod","fStat"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 document.getElementById("refreshBtn").addEventListener("click",load);
+// Column resizers
+(function initResizers(){
+  const table = document.getElementById("taskTable");
+  const cols = table.querySelectorAll("colgroup col");
+  const ths = table.querySelectorAll("thead th");
+  const saved = JSON.parse(localStorage.getItem("colWidths")||"null");
+  if(saved && saved.length===cols.length) cols.forEach((c,i)=>c.style.width = saved[i]+"px");
+  ths.forEach((th,i)=>{
+    if(i===ths.length-1) return;
+    const r = document.createElement("div");
+    r.className = "col-resizer";
+    th.appendChild(r);
+    r.addEventListener("mousedown",e=>{
+      e.preventDefault(); e.stopPropagation();
+      r.classList.add("active");
+      const startX = e.pageX;
+      const startW = cols[i].getBoundingClientRect().width;
+      const onMove = ev => {
+        const w = Math.max(40, startW + (ev.pageX - startX));
+        cols[i].style.width = w + "px";
+      };
+      const onUp = () => {
+        r.classList.remove("active");
+        document.removeEventListener("mousemove",onMove);
+        document.removeEventListener("mouseup",onUp);
+        const widths = Array.from(cols).map(c=>Math.round(c.getBoundingClientRect().width));
+        localStorage.setItem("colWidths", JSON.stringify(widths));
+      };
+      document.addEventListener("mousemove",onMove);
+      document.addEventListener("mouseup",onUp);
+    });
+    r.addEventListener("click",e=>e.stopPropagation());
+  });
+})();
 
 load();
 </script>
