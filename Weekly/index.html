@@ -570,7 +570,11 @@ document.querySelectorAll(".tab").forEach(btn=>{
     document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     const t = btn.dataset.tab;
-    document.querySelectorAll("[data-pane]").forEach(p=>p.classList.toggle("hidden", p.dataset.pane!==t));
+    document.querySelectorAll("[data-pane]").forEach(p=>{
+      const show = p.dataset.pane===t;
+      p.classList.toggle("hidden", !show);
+      p.style.display = show ? "" : "none";
+    });
   });
 });
 // Filter listeners
