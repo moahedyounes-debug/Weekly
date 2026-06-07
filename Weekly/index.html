@@ -369,18 +369,58 @@ function renderWeek(data){
   });
 }
 
-function badge(s){
-  if(s==="Done") return '<span class="badge badge-done">Done</span>';
-  if(s==="In process") return '<span class="badge badge-proc">In process</span>';
-  return '<span class="badge badge-new">'+s+'</span>';
+function renderWeekMix(data){
+  destroyChart("weekMix");
+  const weeks = uniq(data.map(r=>r.week));
+  const series = s => weeks.map(w=>data.filter(r=>r.week===w && effectiveStatus(r)===s).length);
+  charts.weekMix = new Chart(document.getElementById("chartWeekMix"),{
+    type:"bar",
+    data:{ labels:weeks, datasets:[
+      { label:"Done", data:series("Done"), backgroundColor:COLORS.done, stack:"week" },
+      { label:"In process", data:series("In process"), backgroundColor:COLORS.proc, stack:"week" },
+      { label:"New", data:series("New"), backgroundColor:COLORS.new, stack:"week" }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{stacked:true}, y:{stacked:true, beginAtZero:true, ticks:{precision:0}} }, plugins:{ legend:{position:"bottom"}, datalabels:{ color:"#fff", font:{weight:"bold"}, formatter:v=>v||"" } } }
+  });
+}
+
+function renderPicWeek(data){
+  destroyChart("picWeek");
+  const weeks = uniq(RAW.map(r=>r.week));
+  const pics = uniq(RAW.map(r=>r.pic));
+  const palette = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#14b8a6"];
+  charts.picWeek = new Chart(document.getElementById("chartPicWeek"),{
+    type:"line",
+    data:{ labels:weeks, datasets:pics.map((p,i)=>({ label:p, data:weeks.map(w=>{ const rows=data.filter(r=>r.week===w&&r.pic===p); const done=rows.filter(r=>effectiveStatus(r)==="Done").length; return rows.length?Math.round(done/rows.length*100):0; }), borderColor:palette[i%palette.length], backgroundColor:palette[i%palette.length], tension:.35, pointRadius:4 })) },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+"%" } } }, plugins:{ legend:{ position:"bottom" }, tooltip:{ callbacks:{ label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y}%` } }, datalabels:{ display:false } } }
+  });
+}
+
+function renderWeekTable(data){
+  const weeks = uniq(data.map(r=>r.week));
+  document.getElementById("weekBody").innerHTML = weeks.map(w=>{
+    const rows = data.filter(r=>r.week===w), total=rows.length;
+    const done=rows.filter(r=>effectiveStatus(r)==="Done").length, proc=rows.filter(r=>effectiveStatus(r)==="In process").length, news=rows.filter(r=>effectiveStatus(r)==="New").length;
+    const pct = total?Math.round(done/total*100):0;
+    return `<tr><td><strong>${esc(w)}</strong></td><td>${total}</td><td>${badge("Done", done)}</td><td>${badge("In process", proc)}</td><td>${badge("New", news)}</td><td><div class="flex items-center gap-2"><div class="mini-bar" style="width:8rem"><div class="mini-fill" style="width:${pct}%"></div></div><strong>${pct}%</strong></div></td></tr>`;
+  }).join("");
+}
+
+function badge(s, label){
+  const text = label ?? s;
+  if(s==="Done") return '<span class="badge badge-done">'+text+'</span>';
+  if(s==="In process") return '<span class="badge badge-proc">'+text+'</span>';
+  return '<span class="badge badge-new">'+text+'</span>';
 }
 function renderTable(data){
   const tb = document.getElementById("taskBody");
-  tb.innerHTML = data.map(r=>`<tr>
-    <td>${r.module}</td><td>${r.pic}</td><td>${(r.action||"").replace(/</g,"&lt;")}</td>
-    <td>${badge(r.status)}</td><td>${(r.remarks||"").replace(/</g,"&lt;")}</td>
-    <td>${r.week}</td><td>${r.due||""}</td>
-  </tr>`).join("") || `<tr><td colspan="7" class="text-center text-slate-400 py-8">No tasks match the filters.</td></tr>`;
+  tb.innerHTML = data.map(r=>{ const st=effectiveStatus(r); const color=st==="Done"?COLORS.done:st==="In process"?COLORS.proc:COLORS.new; return `<tr class="${r.done?'done-row':''}">
+    <td><input type="checkbox" ${r.done?'checked':''} data-toggle="${r.id}" /></td><td>${esc(r.module)}</td><td class="task-text">${esc(r.question)}</td><td>${esc(r.pic)}</td><td>${esc(r.action)}</td>
+    <td><select class="status-select" data-status="${r.id}" style="background:${color}"><option ${st==='Done'?'selected':''}>Done</option><option ${st==='In process'?'selected':''}>In process</option><option ${st==='New'?'selected':''}>New</option></select></td>
+    <td>${esc(r.week)}</td>
+  </tr>`; }).join("") || `<tr><td colspan="7" class="text-center text-slate-400 py-8">No tasks match the filters.</td></tr>`;
+  tb.querySelectorAll("[data-toggle]").forEach(el=>el.addEventListener("change",()=>{ const id=Number(el.dataset.toggle); const row=RAW.find(r=>r.id===id); if(row){ row.done=el.checked; if(el.checked) row.status="Done"; render(); } }));
+  tb.querySelectorAll("[data-status]").forEach(el=>el.addEventListener("change",()=>{ const id=Number(el.dataset.status); const row=RAW.find(r=>r.id===id); if(row){ row.status=el.value; row.done=el.value==="Done"; render(); } }));
 }
 
 // Tabs
