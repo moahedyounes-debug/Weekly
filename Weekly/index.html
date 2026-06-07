@@ -23,6 +23,9 @@
   select:focus,input:focus{outline:none;border-color:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.25)}
   .bar-track{height:10px;background:#e5e7eb;border-radius:9999px;overflow:hidden}
   .bar-fill{height:100%;background:#0f172a;border-radius:9999px;transition:width .5s ease}
+  .action-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.5rem;padding:.55rem .9rem;font-size:.875rem;font-weight:500;border:1px solid var(--border);text-decoration:none}
+  .btn-primary{background:#0f172a;color:#fff;border-color:#0f172a}.btn-outline{background:#fff;color:#0f172a}.btn:disabled{opacity:.6;cursor:not-allowed}
   table{width:100%;border-collapse:collapse;font-size:.875rem}
   th,td{padding:.6rem .75rem;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
   th{background:#f8fafc;font-weight:600;color:#334155;position:sticky;top:0}
@@ -30,6 +33,7 @@
   .badge-done{background:rgba(34,197,94,.12);color:#15803d}
   .badge-proc{background:rgba(245,158,11,.15);color:#b45309}
   .badge-new{background:rgba(59,130,246,.12);color:#1d4ed8}
+  .team-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin-top:1rem}.mini-bar{height:8px;background:#e5e7eb;border-radius:9999px;overflow:hidden}.mini-fill{height:100%;background:#0f172a;border-radius:9999px}.status-select{width:135px;padding:.35rem .5rem;border-radius:.5rem;color:#fff;font-weight:600;border:0}.done-row{opacity:.6}.done-row .task-text{text-decoration:line-through}
   .loader{width:28px;height:28px;border:3px solid #cbd5e1;border-top-color:#0f172a;border-radius:50%;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
@@ -44,10 +48,16 @@
         <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Service Weekly KT Tracker</h1>
         <p class="text-slate-500 mt-1">Interactive dashboard for task status, completion, and team performance.</p>
       </div>
-      <button id="refreshBtn" class="inline-flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-800">
+      <div class="action-row">
+      <button id="refreshBtn" class="btn btn-outline">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
-        Refresh Data
+        Sync Sheet
       </button>
+      <a class="btn btn-primary" href="./Service_KT_Interactive_Dashboard.xlsx" download>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Download Excel
+      </a>
+      </div>
     </div>
 
     <div id="loadingState" class="card p-10 flex items-center justify-center gap-3">
@@ -94,26 +104,32 @@
       <!-- Overview tab -->
       <div data-pane="overview" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="card p-6"><h3 class="font-semibold mb-4">Status Distribution</h3><div style="height:340px"><canvas id="chartStatus"></canvas></div></div>
-        <div class="card p-6"><h3 class="font-semibold mb-4">Tasks by Module (% completion)</h3><div style="height:340px"><canvas id="chartModule"></canvas></div></div>
+        <div class="card p-6"><h3 class="font-semibold mb-4">Tasks by Module</h3><div style="height:340px"><canvas id="chartModule"></canvas></div></div>
       </div>
 
       <!-- Team tab -->
       <div data-pane="team" class="hidden card p-6">
-        <h3 class="font-semibold mb-4">Team Performance (% completion per PIC)</h3>
+        <h3 class="font-semibold mb-4">Employee Completion %</h3>
         <div style="height:380px"><canvas id="chartTeam"></canvas></div>
+        <div id="teamCards" class="team-cards"></div>
       </div>
 
       <!-- Weeks tab -->
-      <div data-pane="weeks" class="hidden card p-6">
-        <h3 class="font-semibold mb-4">Weekly Trends (% completion per source week)</h3>
-        <div style="height:380px"><canvas id="chartWeek"></canvas></div>
+      <div data-pane="weeks" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card p-6"><h3 class="font-semibold mb-4">Completion % Trend</h3><div style="height:320px"><canvas id="chartWeek"></canvas></div></div>
+          <div class="card p-6"><h3 class="font-semibold mb-4">Status Mix by Week</h3><div style="height:320px"><canvas id="chartWeekMix"></canvas></div></div>
+        </div>
+        <div class="card p-6"><h3 class="font-semibold mb-4">Employee Completion % by Week</h3><div style="height:360px"><canvas id="chartPicWeek"></canvas></div></div>
+        <div class="card overflow-hidden"><div class="p-6 pb-2"><h3 class="font-semibold">Weekly Summary</h3></div><div class="overflow-x-auto"><table><thead><tr><th>Week</th><th>Total</th><th>Done</th><th>In Process</th><th>New</th><th>Completion</th></tr></thead><tbody id="weekBody"></tbody></table></div></div>
       </div>
 
       <!-- Tasks tab -->
       <div data-pane="tasks" class="hidden card overflow-hidden">
+        <div class="p-6 pb-2"><h3 class="font-semibold">Task Tracker — set status inline</h3></div>
         <div class="overflow-x-auto" style="max-height:560px">
           <table>
-            <thead><tr><th>Module</th><th>PIC</th><th>Action</th><th>Status</th><th>Remarks</th><th>Week</th><th>Due</th></tr></thead>
+            <thead><tr><th></th><th>Module</th><th>Task</th><th>PIC</th><th>Action</th><th>Status</th><th>Week</th></tr></thead>
             <tbody id="taskBody"></tbody>
           </table>
         </div>
