@@ -177,11 +177,16 @@ function Dashboard() {
               Interactive dashboard for task status, completion, and team performance.
             </p>
           </div>
-          <Button asChild>
-            <a href="/Service_KT_Interactive_Dashboard.xlsx" download>
-              <Download className="h-4 w-4 mr-2" /> Download Excel Dashboard
-            </a>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Sync Sheet
+            </Button>
+            <Button asChild>
+              <a href="/Service_KT_Interactive_Dashboard.xlsx" download>
+                <Download className="h-4 w-4 mr-2" /> Download Excel
+              </a>
+            </Button>
+          </div>
         </header>
 
         {/* KPI cards */}
