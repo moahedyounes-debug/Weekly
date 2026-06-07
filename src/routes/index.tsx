@@ -441,7 +441,19 @@ function Dashboard() {
                           <TableCell>{t.pic}</TableCell>
                           <TableCell className="max-w-sm text-sm text-muted-foreground">{t.action}</TableCell>
                           <TableCell>
-                            <Badge style={{ background: STATUS_COLORS[eff], color: "white" }}>{eff}</Badge>
+                            <Select value={eff} onValueChange={(v) => setStatusFor(t.id, v)}>
+                              <SelectTrigger
+                                className="h-8 w-32 border-0 font-medium text-white"
+                                style={{ background: STATUS_COLORS[eff] }}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Done">Done</SelectItem>
+                                <SelectItem value="In process">In Process</SelectItem>
+                                <SelectItem value="New">New</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell>{t.sourceWeek}</TableCell>
                         </TableRow>
