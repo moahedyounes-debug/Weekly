@@ -137,10 +137,22 @@
 
       <!-- Tasks tab -->
       <div data-pane="tasks" class="hidden card overflow-hidden">
-        <div class="p-6 pb-2"><h3 class="font-semibold">Task Tracker — set status inline</h3></div>
-        <div class="overflow-x-auto" style="max-height:560px">
-          <table>
-            <thead><tr><th></th><th>Module</th><th>Task</th><th>PIC</th><th>Action</th><th>Status</th><th>Week</th></tr></thead>
+        <div class="p-6 pb-2 flex items-center justify-between gap-3 flex-wrap">
+          <h3 class="font-semibold">Task Tracker — edit Status & Remarks inline (auto-syncs to Google Sheet)</h3>
+          <span id="syncBadge">Idle</span>
+        </div>
+        <div class="overflow-x-auto" style="max-height:640px">
+          <table id="taskTable">
+            <thead><tr>
+              <th></th>
+              <th class="sortable" data-sort="module">Module<span class="sort-ind">↕</span></th>
+              <th class="sortable" data-sort="pic">PIC<span class="sort-ind">↕</span></th>
+              <th class="sortable" data-sort="action">Action<span class="sort-ind">↕</span></th>
+              <th class="sortable" data-sort="status">Status<span class="sort-ind">↕</span></th>
+              <th class="sortable" data-sort="remarks">Remarks<span class="sort-ind">↕</span></th>
+              <th class="sortable" data-sort="week">Week<span class="sort-ind">↕</span></th>
+              <th class="sortable" data-sort="due">Due<span class="sort-ind">↕</span></th>
+            </tr></thead>
             <tbody id="taskBody"></tbody>
           </table>
         </div>
