@@ -166,6 +166,10 @@
 <script>
 const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+// Paste your deployed Apps Script Web App URL here to enable write-back to the sheet.
+// Deploy steps are documented in the README at the bottom of this file's comments.
+const APPS_SCRIPT_URL = (window.localStorage && localStorage.getItem("APPS_SCRIPT_URL")) || "";
+const SHEET_NAME = "Sheet1"; // change if your tab name differs
 
 Chart.register(ChartDataLabels);
 Chart.defaults.font.family = "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto";
