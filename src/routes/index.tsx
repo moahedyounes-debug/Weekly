@@ -318,10 +318,102 @@ function Dashboard() {
             </div>
           </TabsContent>
 
+          <TabsContent value="trends" className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" /> Completion % Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={weeklyTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis domain={[0, 100]} unit="%" />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="Completion" stroke="hsl(217 91% 60%)" strokeWidth={3} dot={{ r: 5 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle>Status Mix by Week</CardTitle></CardHeader>
+                <CardContent style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="Done" stackId="a" fill={STATUS_COLORS.Done} />
+                      <Bar dataKey="In process" stackId="a" fill={STATUS_COLORS["In process"]} />
+                      <Bar dataKey="New" stackId="a" fill={STATUS_COLORS.New} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+            <Card>
+              <CardHeader><CardTitle>Employee Completion % by Week</CardTitle></CardHeader>
+              <CardContent style={{ height: 360 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weeklyByPic}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis domain={[0, 100]} unit="%" />
+                    <Tooltip />
+                    <Legend />
+                    {pics.map((p, i) => (
+                      <Line key={p} type="monotone" dataKey={p} stroke={picColors[i % picColors.length]} strokeWidth={2} dot={{ r: 4 }} />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Weekly Summary</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Week</TableHead>
+                      <TableHead className="text-center">Total</TableHead>
+                      <TableHead className="text-center">Done</TableHead>
+                      <TableHead className="text-center">In Process</TableHead>
+                      <TableHead className="text-center">New</TableHead>
+                      <TableHead>Completion</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {weeklyTrend.map(w => (
+                      <TableRow key={w.week}>
+                        <TableCell className="font-semibold">{w.week}</TableCell>
+                        <TableCell className="text-center">{w.Total}</TableCell>
+                        <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS.Done, color: "white" }}>{w.Done}</Badge></TableCell>
+                        <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS["In process"], color: "white" }}>{w["In process"]}</Badge></TableCell>
+                        <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS.New, color: "white" }}>{w.New}</Badge></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={w.Completion} className="h-2 w-32" />
+                            <span className="text-sm font-medium">{w.Completion}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="tasks">
             <Card>
               <CardHeader>
-                <CardTitle>Task Tracker — tick to mark done</CardTitle>
+                <CardTitle>Task Tracker — set status inline</CardTitle>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
