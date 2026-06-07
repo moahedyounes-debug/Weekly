@@ -50,6 +50,17 @@
   #syncBadge.err{background:#fee2e2;color:#991b1b}
   .loader{width:28px;height:28px;border:3px solid #cbd5e1;border-top-color:#0f172a;border-radius:50%;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem}
+  .modal-backdrop.open{display:flex}
+  .modal{background:#fff;border-radius:.75rem;max-width:680px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
+  .modal-head{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .modal-body{padding:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+  .modal-body .full{grid-column:1/-1}
+  .modal-body label{font-size:.78rem;font-weight:600;color:#475569;display:block;margin-bottom:.25rem}
+  .modal-body input,.modal-body select,.modal-body textarea{width:100%;padding:.5rem .6rem;border:1px solid var(--border);border-radius:.45rem;font:inherit;background:#fff}
+  .modal-body textarea{resize:vertical;min-height:70px}
+  .modal-foot{padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem}
+  .icon-x{background:none;border:0;font-size:1.4rem;cursor:pointer;color:#64748b;line-height:1}
 </style>
 </head>
 <body>
