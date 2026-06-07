@@ -121,9 +121,50 @@ function Dashboard() {
     return Array.from(map.values());
   }, [filtered]);
 
+  const weeks = useMemo(
+    () => Array.from(new Set(initial.map(t => t.sourceWeek).filter(Boolean))).sort() as string[],
+    [initial]
+  );
+
+  const weeklyTrend = useMemo(() => {
+    return weeks.map(w => {
+      const wt = filtered.filter(t => t.sourceWeek === w);
+      const done = wt.filter(t => normalizeStatus(t.status, t.done) === "Done").length;
+      const inProc = wt.filter(t => normalizeStatus(t.status, t.done) === "In process").length;
+      const news = wt.filter(t => normalizeStatus(t.status, t.done) === "New").length;
+      return {
+        week: w,
+        Done: done,
+        "In process": inProc,
+        New: news,
+        Total: wt.length,
+        Completion: wt.length ? Math.round((done / wt.length) * 100) : 0,
+      };
+    });
+  }, [filtered, weeks]);
+
+  const weeklyByPic = useMemo(() => {
+    // [{ week, [pic]: completion% }, ...]
+    return weeks.map(w => {
+      const row: Record<string, string | number> = { week: w };
+      pics.forEach(p => {
+        const wt = filtered.filter(t => t.sourceWeek === w && t.pic === p);
+        const done = wt.filter(t => normalizeStatus(t.status, t.done) === "Done").length;
+        row[p] = wt.length ? Math.round((done / wt.length) * 100) : 0;
+      });
+      return row;
+    });
+  }, [filtered, weeks, pics]);
+
   const toggleDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
   };
+
+  const setStatusFor = (id: number, value: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: value, done: value === "Done" } : t));
+  };
+
+  const picColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
