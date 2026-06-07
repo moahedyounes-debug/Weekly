@@ -610,6 +610,89 @@ document.getElementById("refreshBtn").addEventListener("click",load);
   });
 })();
 
+// ============= New Task modal =============
+const newTaskModal = document.createElement("div");
+newTaskModal.className = "modal-backdrop";
+newTaskModal.innerHTML = `
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 class="font-semibold">Add New Task</h3>
+      <button class="icon-x" data-close>&times;</button>
+    </div>
+    <form id="newTaskForm">
+      <div class="modal-body">
+        <div><label>Open Time</label><input type="date" name="openTime" required></div>
+        <div><label>Module</label><input name="module" placeholder="e.g. SP, IT, SN" required></div>
+        <div class="full"><label>Question / Task</label><textarea name="question" rows="2" required></textarea></div>
+        <div><label>PIC</label><input name="pic" required></div>
+        <div><label>Completion Time (Due)</label><input type="date" name="completionTime"></div>
+        <div class="full"><label>Management Action</label><textarea name="action" rows="2"></textarea></div>
+        <div>
+          <label>Status</label>
+          <select name="status">
+            <option>New</option><option>In process</option><option>Done</option>
+          </select>
+        </div>
+        <div><label>Source Week</label><input name="sourceWeek" placeholder="e.g. W23"></div>
+        <div class="full"><label>Remarks</label><textarea name="remarks" rows="2"></textarea></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="newTaskSave">Save Task</button>
+      </div>
+    </form>
+  </div>`;
+document.body.appendChild(newTaskModal);
+
+function openNewTask(){
+  const f = newTaskModal.querySelector("#newTaskForm");
+  f.reset();
+  // sensible defaults
+  const today = new Date().toISOString().slice(0,10);
+  f.openTime.value = today;
+  // try to suggest the latest week from data
+  const lastWeek = Array.from(new Set((window.__rows||[]).map(r=>r.week).filter(Boolean))).pop();
+  if(lastWeek) f.sourceWeek.value = lastWeek;
+  newTaskModal.classList.add("open");
+}
+function closeNewTask(){ newTaskModal.classList.remove("open"); }
+newTaskModal.addEventListener("click",e=>{
+  if(e.target===newTaskModal || e.target.hasAttribute("data-close")) closeNewTask();
+});
+document.getElementById("newTaskBtn").addEventListener("click",openNewTask);
+
+newTaskModal.querySelector("#newTaskForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  if(!APPS_SCRIPT_URL){ setSyncStatus("err","Sheet write-back not configured"); return; }
+  const fd = new FormData(e.target);
+  const payload = {
+    action: "append",
+    sheet: SHEET_NAME,
+    "Open Time": fd.get("openTime") || "",
+    "Module": fd.get("module") || "",
+    "Question": fd.get("question") || "",
+    "PIC": fd.get("pic") || "",
+    "Management Action": fd.get("action") || "",
+    "Completion Time": fd.get("completionTime") || "",
+    "Status": fd.get("status") || "New",
+    "Remarks": fd.get("remarks") || "",
+    "Source Week": fd.get("sourceWeek") || "",
+  };
+  const saveBtn = document.getElementById("newTaskSave");
+  saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+  setSyncStatus("saving","Adding task…");
+  try{
+    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", body: new URLSearchParams(payload) });
+    setSyncStatus("ok","Task added ✓");
+    closeNewTask();
+    setTimeout(()=>{ load(); setSyncStatus("","Idle"); }, 800);
+  }catch(err){
+    setSyncStatus("err","Add failed");
+  }finally{
+    saveBtn.disabled = false; saveBtn.textContent = "Save Task";
+  }
+});
+
 load();
 </script>
 </body>
