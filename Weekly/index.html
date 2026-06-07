@@ -204,7 +204,7 @@ function uniq(arr){ return [...new Set(arr.filter(Boolean))].sort(); }
 function initFilters(){
   fillSelect("fPic", uniq(RAW.map(r=>r.pic)));
   fillSelect("fMod", uniq(RAW.map(r=>r.module)));
-  fillSelect("fStat", uniq(RAW.map(r=>r.status)));
+  fillSelect("fStat", uniq(RAW.map(effectiveStatus)));
 }
 function fillSelect(id, vals){
   const el = document.getElementById(id);
@@ -303,21 +303,24 @@ function renderStatus(counts,total){
 
 function renderModule(data){
   destroyChart("module");
-  const c = completionByKey(data,"module");
+  const modules = uniq(data.map(r=>r.module));
+  const done = modules.map(m=>data.filter(r=>r.module===m && effectiveStatus(r)==="Done").length);
+  const open = modules.map(m=>data.filter(r=>r.module===m && effectiveStatus(r)!=="Done").length);
   charts.module = new Chart(document.getElementById("chartModule"),{
     type:"bar",
-    data:{ labels:c.labels, datasets:[{ label:"% Done", data:c.pct, backgroundColor:COLORS.done, borderRadius:6 }] },
+    data:{ labels:modules, datasets:[
+      { label:"Done", data:done, backgroundColor:COLORS.done, stack:"module" },
+      { label:"Open", data:open, backgroundColor:COLORS.proc, stack:"module" }
+    ] },
     options:{
       responsive:true, maintainAspectRatio:false,
-      scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+"%" } } },
+      scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } } },
       plugins:{
-        legend:{ display:false },
-        tooltip:{ callbacks:{ label:c=>`${c.parsed.y}% (${c.dataIndex!==undefined? '':''})` , afterLabel:c=>`Done ${ (charts.module.data.datasets[0]._done||[])[c.dataIndex]||""}`}},
-        datalabels:{ anchor:"end", align:"top", color:"#0f172a", font:{weight:"bold"}, formatter:v=>v+"%" }
+        legend:{ position:"bottom" },
+        datalabels:{ color:"#fff", font:{weight:"bold"}, formatter:v=>v||"" }
       }
     }
   });
-  charts.module.data.datasets[0]._done = c.done;
 }
 
 function renderTeam(data){
@@ -336,6 +339,13 @@ function renderTeam(data){
       }
     }
   });
+  document.getElementById("teamCards").innerHTML = c.labels.map((name,i)=>{
+    const rows = data.filter(r=>r.pic===name);
+    const done = rows.filter(r=>effectiveStatus(r)==="Done").length;
+    const proc = rows.filter(r=>effectiveStatus(r)==="In process").length;
+    const news = rows.filter(r=>effectiveStatus(r)==="New").length;
+    return `<div class="card p-4"><div class="flex items-center justify-between gap-3"><strong>${esc(name)}</strong><span class="badge badge-new">${c.pct[i]}%</span></div><div class="mini-bar mt-3"><div class="mini-fill" style="width:${c.pct[i]}%"></div></div><div class="flex gap-2 flex-wrap mt-3"><span class="badge badge-done">Done ${done}</span><span class="badge badge-proc">In Process ${proc}</span><span class="badge badge-new">New ${news}</span><span class="badge">Total ${rows.length}</span></div></div>`;
+  }).join("");
 }
 
 function renderWeek(data){
