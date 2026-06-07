@@ -561,6 +561,40 @@ document.querySelectorAll(".tab").forEach(btn=>{
 // Filter listeners
 ["fSearch","fPic","fMod","fStat"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 document.getElementById("refreshBtn").addEventListener("click",load);
+// Column resizers
+(function initResizers(){
+  const table = document.getElementById("taskTable");
+  const cols = table.querySelectorAll("colgroup col");
+  const ths = table.querySelectorAll("thead th");
+  const saved = JSON.parse(localStorage.getItem("colWidths")||"null");
+  if(saved && saved.length===cols.length) cols.forEach((c,i)=>c.style.width = saved[i]+"px");
+  ths.forEach((th,i)=>{
+    if(i===ths.length-1) return;
+    const r = document.createElement("div");
+    r.className = "col-resizer";
+    th.appendChild(r);
+    r.addEventListener("mousedown",e=>{
+      e.preventDefault(); e.stopPropagation();
+      r.classList.add("active");
+      const startX = e.pageX;
+      const startW = cols[i].getBoundingClientRect().width;
+      const onMove = ev => {
+        const w = Math.max(40, startW + (ev.pageX - startX));
+        cols[i].style.width = w + "px";
+      };
+      const onUp = () => {
+        r.classList.remove("active");
+        document.removeEventListener("mousemove",onMove);
+        document.removeEventListener("mouseup",onUp);
+        const widths = Array.from(cols).map(c=>Math.round(c.getBoundingClientRect().width));
+        localStorage.setItem("colWidths", JSON.stringify(widths));
+      };
+      document.addEventListener("mousemove",onMove);
+      document.addEventListener("mouseup",onUp);
+    });
+    r.addEventListener("click",e=>e.stopPropagation());
+  });
+})();
 
 load();
 </script>
