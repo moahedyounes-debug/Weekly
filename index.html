@@ -218,7 +218,7 @@ async function load(){
     const res = await fetch(SHEET_URL + "&_=" + Date.now());
     if(!res.ok) throw new Error("HTTP "+res.status);
     const text = await res.text();
-    const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
+    const parsed = Papa.parse(text, { header:true, skipEmptyLines:false });
     RAW = parsed.data.map((r, idx) => ({
       id: idx,
       sheetRow: idx + 2, // header is row 1
