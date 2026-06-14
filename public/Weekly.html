@@ -111,11 +111,12 @@
       </div>
 
       <!-- Filters -->
-      <div class="card p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div class="card p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
         <input id="fSearch" placeholder="Search task, action, remarks…" />
         <select id="fPic"><option value="">All PICs</option></select>
         <select id="fMod"><option value="">All Modules</option></select>
         <select id="fStat"><option value="">All Status</option></select>
+        <select id="fWeek"><option value="">All Weeks</option></select>
       </div>
 
       <!-- Tabs -->
@@ -254,6 +255,7 @@ function initFilters(){
   fillSelect("fPic", uniq(RAW.map(r=>r.pic)));
   fillSelect("fMod", uniq(RAW.map(r=>r.module)));
   fillSelect("fStat", uniq(RAW.map(effectiveStatus)));
+  fillSelect("fWeek", uniq(RAW.map(r=>r.week)));
 }
 function fillSelect(id, vals){
   const el = document.getElementById(id);
@@ -268,10 +270,12 @@ function filtered(){
   const p = document.getElementById("fPic").value;
   const m = document.getElementById("fMod").value;
   const st = document.getElementById("fStat").value;
+  const w = document.getElementById("fWeek").value;
   return RAW.filter(r=>{
     if(p && r.pic!==p) return false;
     if(m && r.module!==m) return false;
     if(st && effectiveStatus(r)!==st) return false;
+    if(w && r.week!==w) return false;
     if(s){
       const hay = (r.question+" "+r.action+" "+r.remarks+" "+r.description).toLowerCase();
       if(!hay.includes(s)) return false;
@@ -491,9 +495,18 @@ async function pushUpdate(row, field, value){
   try{
     // Use no-cors + form-encoded to avoid CORS preflight on Apps Script
     const body = new URLSearchParams({
+      action: "update",
       sheet: SHEET_NAME,
       row: String(row.sheetRow),
-      field, value: String(value ?? "")
+      field,
+      value: String(value ?? ""),
+      matchOpenTime: row.openTime || "",
+      matchModule: row.module || "",
+      matchQuestion: row.question || "",
+      matchPIC: row.pic || "",
+      matchAction: row.action || "",
+      matchCompletionTime: row.due || "",
+      matchSourceWeek: row.week || ""
     });
     await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", body });
     setSyncStatus("ok");
@@ -578,7 +591,7 @@ document.querySelectorAll(".tab").forEach(btn=>{
   });
 });
 // Filter listeners
-["fSearch","fPic","fMod","fStat"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+["fSearch","fPic","fMod","fStat","fWeek"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 document.getElementById("refreshBtn").addEventListener("click",load);
 // Column resizers
 (function initResizers(){
