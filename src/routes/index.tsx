@@ -72,19 +72,32 @@ const STATUS_COLORS: Record<string, string> = {
   Canceled: "hsl(215 16% 47%)",
 };
 
+type DashboardTask = SheetTask & { id: number; rowKey: string; rowKeyIndex: number };
+
+function withRowKeys(rows: SheetTask[]): DashboardTask[] {
+  const seen = new Map<string, number>();
+  return rows.map((task, id) => {
+    const key = taskKey(task);
+    const rowKeyIndex = seen.get(key) ?? 0;
+    seen.set(key, rowKeyIndex + 1);
+    return { ...task, id, rowKey: key, rowKeyIndex };
+  });
+}
+
 function Dashboard() {
   const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
-  const [tasks, setTasks] = useState(() =>
-    initial.map((t, i) => ({ ...t, id: i }))
-  );
+  const updateTask = useServerFn(updateTaskInSheet);
+  const [tasks, setTasks] = useState<DashboardTask[]>(() => withRowKeys(initial));
+  const [syncStatus, setSyncStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   useEffect(() => {
-    setTasks(initial.map((t, i) => ({ ...t, id: i })));
+    setTasks(withRowKeys(initial));
   }, [initial]);
 
   const [search, setSearch] = useState("");
   const [pic, setPic] = useState<string>("all");
   const [module, setModule] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
+  const [week, setWeek] = useState<string>("all");
 
   const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
   const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
