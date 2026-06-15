@@ -87,6 +87,7 @@ function withRowKeys(rows: SheetTask[]): DashboardTask[] {
 function Dashboard() {
   const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
   const updateTask = useServerFn(updateTaskInSheet);
+  const setStrike = useServerFn(setRowStrikethroughInSheet);
   const [tasks, setTasks] = useState<DashboardTask[]>(() => withRowKeys(initial));
   const [syncStatus, setSyncStatus] = useState<"saving" | "saved" | "error">("saved");
   useEffect(() => {
