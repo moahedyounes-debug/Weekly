@@ -477,11 +477,11 @@ function renderWeekTable(data){
     const rows = data.filter(r=>r.week===w), total=rows.length;
     const done=rows.filter(r=>effectiveStatus(r)==="Done").length, proc=rows.filter(r=>effectiveStatus(r)==="In process").length, news=rows.filter(r=>effectiveStatus(r)==="New").length, canceled=rows.filter(r=>effectiveStatus(r)==="Canceled").length;
     const pct = total?Math.round(done/total*100):0;
-    return `<tr><td><strong>${esc(w)}</strong></td><td>${total}</td><td>${badge("Done", done)}</td><td>${badge("In process", proc)}</td><td>${badge("New", news)}</td><td>${badge("Canceled", canceled)}</td><td><div class="flex items-center gap-2"><div class="mini-bar" style="width:8rem"><div class="mini-fill" style="width:${pct}%"></div></div><strong>${pct}%</strong></div></td></tr>`;
+    return `<tr><td><strong>${esc(w)}</strong></td><td>${total}</td><td>${mkBadge("Done", done)}</td><td>${mkBadge("In process", proc)}</td><td>${mkBadge("New", news)}</td><td>${mkBadge("Canceled", canceled)}</td><td><div class="flex items-center gap-2"><div class="mini-bar" style="width:8rem"><div class="mini-fill" style="width:${pct}%"></div></div><strong>${pct}%</strong></div></td></tr>`;
   }).join("");
 }
 
-function badge(s, label){
+function mkBadge(s, label){
   const text = label ?? s;
   if(s==="Done") return '<span class="badge badge-done">'+text+'</span>';
   if(s==="In process") return '<span class="badge badge-proc">'+text+'</span>';
