@@ -209,12 +209,21 @@ function Dashboard() {
     }
   };
 
+  const applyStrike = async (task: DashboardTask, strike: boolean) => {
+    try {
+      await setStrike({ data: { rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, strikethrough: strike } });
+    } catch {
+      setSyncStatus("error");
+    }
+  };
+
   const toggleDone = (task: DashboardTask) => {
     const done = !task.done;
     const nextStatus = done ? "Done" : "In process";
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done, status: nextStatus } : t));
     void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
     void saveField(task, "Status", nextStatus);
+    void applyStrike(task, done);
   };
 
   const setStatusFor = (task: DashboardTask, value: string) => {
@@ -222,6 +231,7 @@ function Dashboard() {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: value, done } : t));
     void saveField(task, "Status", value);
     void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
+    void applyStrike(task, done);
   };
 
   const setRemarksFor = (task: DashboardTask, value: string) => {
