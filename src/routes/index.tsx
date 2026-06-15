@@ -137,11 +137,11 @@ function Dashboard() {
   ].filter(d => d.value > 0);
 
   const perfData = useMemo(() => {
-    const map = new Map<string, { name: string; Done: number; "In process": number; New: number; Total: number }>();
+    const map = new Map<string, { name: string; Done: number; "In process": number; New: number; Canceled: number; Total: number }>();
     filtered.forEach(t => {
       const p = t.pic || "Unassigned";
-      const eff = normalizeStatus(t.status, t.done) as "Done" | "In process" | "New";
-      if (!map.has(p)) map.set(p, { name: p, Done: 0, "In process": 0, New: 0, Total: 0 });
+      const eff = normalizeStatus(t.status, t.done) as "Done" | "In process" | "New" | "Canceled";
+      if (!map.has(p)) map.set(p, { name: p, Done: 0, "In process": 0, New: 0, Canceled: 0, Total: 0 });
       const m = map.get(p)!;
       m[eff] += 1;
       m.Total += 1;
@@ -153,33 +153,32 @@ function Dashboard() {
   }, [filtered]);
 
   const moduleData = useMemo(() => {
-    const map = new Map<string, { name: string; Done: number; Open: number }>();
+    const map = new Map<string, { name: string; Done: number; Open: number; Canceled: number }>();
     filtered.forEach(t => {
       const m = t.module || "—";
       const eff = normalizeStatus(t.status, t.done);
-      if (!map.has(m)) map.set(m, { name: m, Done: 0, Open: 0 });
+      if (!map.has(m)) map.set(m, { name: m, Done: 0, Open: 0, Canceled: 0 });
       const e = map.get(m)!;
-      if (eff === "Done") e.Done++; else e.Open++;
+      if (eff === "Done") e.Done++;
+      else if (eff === "Canceled") e.Canceled++;
+      else e.Open++;
     });
     return Array.from(map.values());
   }, [filtered]);
 
-  const weeks = useMemo(
-    () => Array.from(new Set(initial.map(t => t.sourceWeek).filter(Boolean))).sort() as string[],
-    [initial]
-  );
-
   const weeklyTrend = useMemo(() => {
     return weeks.map(w => {
-      const wt = filtered.filter(t => t.sourceWeek === w);
+      const wt = filtered.filter(t => (t.sourceWeek || "—") === w);
       const done = wt.filter(t => normalizeStatus(t.status, t.done) === "Done").length;
       const inProc = wt.filter(t => normalizeStatus(t.status, t.done) === "In process").length;
       const news = wt.filter(t => normalizeStatus(t.status, t.done) === "New").length;
+      const canceled = wt.filter(t => normalizeStatus(t.status, t.done) === "Canceled").length;
       return {
         week: w,
         Done: done,
         "In process": inProc,
         New: news,
+        Canceled: canceled,
         Total: wt.length,
         Completion: wt.length ? Math.round((done / wt.length) * 100) : 0,
       };
