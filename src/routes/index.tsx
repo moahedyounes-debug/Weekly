@@ -504,14 +504,14 @@ function Dashboard() {
                       return (
                         <TableRow key={t.id} className={t.done ? "opacity-60" : ""}>
                           <TableCell>
-                            <Checkbox checked={t.done} onCheckedChange={() => toggleDone(t.id)} />
+                            <Checkbox checked={t.done} onCheckedChange={() => toggleDone(t)} />
                           </TableCell>
                           <TableCell><Badge variant="outline">{t.module || "—"}</Badge></TableCell>
                           <TableCell className={`max-w-xs ${t.done ? "line-through" : ""}`}>{t.question}</TableCell>
                           <TableCell>{t.pic}</TableCell>
                           <TableCell className="max-w-sm text-sm text-muted-foreground">{t.action}</TableCell>
                           <TableCell>
-                            <Select value={eff} onValueChange={(v) => setStatusFor(t.id, v)}>
+                            <Select value={eff} onValueChange={(v) => setStatusFor(t, v)}>
                               <SelectTrigger
                                 className="h-8 w-32 border-0 font-medium text-white"
                                 style={{ background: STATUS_COLORS[eff] }}
@@ -522,6 +522,7 @@ function Dashboard() {
                                 <SelectItem value="Done">Done</SelectItem>
                                 <SelectItem value="In process">In Process</SelectItem>
                                 <SelectItem value="New">New</SelectItem>
+                                <SelectItem value="Canceled">Canceled</SelectItem>
                               </SelectContent>
                             </Select>
                           </TableCell>
