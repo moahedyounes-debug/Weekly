@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { fetchTasksFromSheet, updateTaskInSheet, type SheetTask } from "@/lib/tasks.functions";
+import { fetchTasksFromSheet, updateTaskInSheet, setRowStrikethroughInSheet, type SheetTask } from "@/lib/tasks.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
