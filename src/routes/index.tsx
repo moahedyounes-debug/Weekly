@@ -190,7 +190,7 @@ function Dashboard() {
     return weeks.map(w => {
       const row: Record<string, string | number> = { week: w };
       pics.forEach(p => {
-        const wt = filtered.filter(t => t.sourceWeek === w && t.pic === p);
+        const wt = filtered.filter(t => (t.sourceWeek || "—") === w && t.pic === p);
         const done = wt.filter(t => normalizeStatus(t.status, t.done) === "Done").length;
         row[p] = wt.length ? Math.round((done / wt.length) * 100) : 0;
       });
@@ -198,12 +198,35 @@ function Dashboard() {
     });
   }, [filtered, weeks, pics]);
 
-  const toggleDone = (id: number) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  const saveField = async (task: DashboardTask, field: "Status" | "Remarks" | "Done? (✓)", value: string) => {
+    setSyncStatus("saving");
+    try {
+      await updateTask({ data: { rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, field, value } });
+      setSyncStatus("saved");
+      window.setTimeout(() => setSyncStatus("idle"), 1500);
+    } catch {
+      setSyncStatus("error");
+    }
   };
 
-  const setStatusFor = (id: number, value: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: value, done: value === "Done" } : t));
+  const toggleDone = (task: DashboardTask) => {
+    const done = !task.done;
+    const nextStatus = done ? "Done" : "In process";
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done, status: nextStatus } : t));
+    void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
+    void saveField(task, "Status", nextStatus);
+  };
+
+  const setStatusFor = (task: DashboardTask, value: string) => {
+    const done = value === "Done";
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: value, done } : t));
+    void saveField(task, "Status", value);
+    void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
+  };
+
+  const setRemarksFor = (task: DashboardTask, value: string) => {
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, remarks: value } : t));
+    void saveField(task, "Remarks", value);
   };
 
   const picColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
