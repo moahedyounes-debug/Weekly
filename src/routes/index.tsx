@@ -505,20 +505,14 @@ function Dashboard() {
                     className={
                       syncStatus === "saving"
                         ? "bg-amber-500 text-white hover:bg-amber-500"
-                        : syncStatus === "saved"
-                        ? "bg-emerald-600 text-white hover:bg-emerald-600"
-                        : ""
+                        : syncStatus === "error"
+                        ? ""
+                        : "bg-emerald-600 text-white hover:bg-emerald-600"
                     }
                   >
                     <span
-                      className={`mr-1.5 inline-block h-2 w-2 rounded-full ${
-                        syncStatus === "saving"
-                          ? "bg-white animate-pulse"
-                          : syncStatus === "saved"
-                          ? "bg-white"
-                          : syncStatus === "error"
-                          ? "bg-white"
-                          : "bg-muted-foreground"
+                      className={`mr-1.5 inline-block h-2 w-2 rounded-full bg-white ${
+                        syncStatus === "saving" ? "animate-pulse" : ""
                       }`}
                     />
                     {syncStatus === "saving"
