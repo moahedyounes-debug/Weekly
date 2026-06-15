@@ -88,7 +88,7 @@ function Dashboard() {
   const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
   const updateTask = useServerFn(updateTaskInSheet);
   const [tasks, setTasks] = useState<DashboardTask[]>(() => withRowKeys(initial));
-  const [syncStatus, setSyncStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [syncStatus, setSyncStatus] = useState<"saving" | "saved" | "error">("saved");
   useEffect(() => {
     setTasks(withRowKeys(initial));
   }, [initial]);
@@ -203,7 +203,6 @@ function Dashboard() {
     try {
       await updateTask({ data: { rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, field, value } });
       setSyncStatus("saved");
-      window.setTimeout(() => setSyncStatus("idle"), 1500);
     } catch {
       setSyncStatus("error");
     }
@@ -505,29 +504,21 @@ function Dashboard() {
                     className={
                       syncStatus === "saving"
                         ? "bg-amber-500 text-white hover:bg-amber-500"
-                        : syncStatus === "saved"
-                        ? "bg-emerald-600 text-white hover:bg-emerald-600"
-                        : ""
+                        : syncStatus === "error"
+                        ? ""
+                        : "bg-emerald-600 text-white hover:bg-emerald-600"
                     }
                   >
                     <span
-                      className={`mr-1.5 inline-block h-2 w-2 rounded-full ${
-                        syncStatus === "saving"
-                          ? "bg-white animate-pulse"
-                          : syncStatus === "saved"
-                          ? "bg-white"
-                          : syncStatus === "error"
-                          ? "bg-white"
-                          : "bg-muted-foreground"
+                      className={`mr-1.5 inline-block h-2 w-2 rounded-full bg-white ${
+                        syncStatus === "saving" ? "animate-pulse" : ""
                       }`}
                     />
                     {syncStatus === "saving"
                       ? "Saving…"
-                      : syncStatus === "saved"
-                      ? "Saved ✓"
                       : syncStatus === "error"
                       ? "Save failed"
-                      : "Idle"}
+                      : "Saved ✓"}
                   </Badge>
                 </div>
               </CardHeader>
