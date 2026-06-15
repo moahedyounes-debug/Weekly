@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { fetchTasksFromSheet, updateTaskInSheet, type SheetTask } from "@/lib/tasks.functions";
+import { fetchTasksFromSheet, updateTaskInSheet, setRowStrikethroughInSheet, type SheetTask } from "@/lib/tasks.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -87,6 +87,7 @@ function withRowKeys(rows: SheetTask[]): DashboardTask[] {
 function Dashboard() {
   const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
   const updateTask = useServerFn(updateTaskInSheet);
+  const setStrike = useServerFn(setRowStrikethroughInSheet);
   const [tasks, setTasks] = useState<DashboardTask[]>(() => withRowKeys(initial));
   const [syncStatus, setSyncStatus] = useState<"saving" | "saved" | "error">("saved");
   useEffect(() => {
@@ -208,12 +209,21 @@ function Dashboard() {
     }
   };
 
+  const applyStrike = async (task: DashboardTask, strike: boolean) => {
+    try {
+      await setStrike({ data: { rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, strikethrough: strike } });
+    } catch {
+      setSyncStatus("error");
+    }
+  };
+
   const toggleDone = (task: DashboardTask) => {
     const done = !task.done;
     const nextStatus = done ? "Done" : "In process";
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done, status: nextStatus } : t));
     void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
     void saveField(task, "Status", nextStatus);
+    void applyStrike(task, done);
   };
 
   const setStatusFor = (task: DashboardTask, value: string) => {
@@ -221,6 +231,7 @@ function Dashboard() {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: value, done } : t));
     void saveField(task, "Status", value);
     void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
+    void applyStrike(task, done);
   };
 
   const setRemarksFor = (task: DashboardTask, value: string) => {
