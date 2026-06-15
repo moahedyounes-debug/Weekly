@@ -13,7 +13,7 @@
 <style>
   :root{
     --bg:#f8fafc; --card:#ffffff; --border:#e5e7eb; --fg:#0f172a; --muted:#64748b;
-    --done:#22c55e; --inproc:#f59e0b; --new:#3b82f6; --bar:#0f172a;
+    --done:#22c55e; --inproc:#f59e0b; --new:#3b82f6; --cancel:#64748b; --bar:#0f172a;
   }
   html,body{background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
@@ -40,6 +40,7 @@
   .badge-done{background:rgba(34,197,94,.12);color:#15803d}
   .badge-proc{background:rgba(245,158,11,.15);color:#b45309}
   .badge-new{background:rgba(59,130,246,.12);color:#1d4ed8}
+  .badge-cancel{background:rgba(100,116,139,.14);color:#475569}
   .team-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin-top:1rem}.mini-bar{height:8px;background:#e5e7eb;border-radius:9999px;overflow:hidden}.mini-fill{height:100%;background:#0f172a;border-radius:9999px}.status-select{width:135px;padding:.35rem .5rem;border-radius:.5rem;color:#fff;font-weight:600;border:0}.done-row{opacity:.6}.done-row .task-text{text-decoration:line-through}
   .remarks-input{width:100%;min-width:180px;border:1px solid transparent;background:transparent;padding:.3rem .4rem;border-radius:.4rem;font:inherit;color:inherit;resize:vertical;min-height:2.2rem}
   .remarks-input:hover{border-color:#e5e7eb;background:#fff}
@@ -93,11 +94,12 @@
     <div id="app" class="hidden space-y-6">
 
       <!-- KPI cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Total Tasks</p><p id="kpiTotal" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-slate-100"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><rect x="3" y="4" width="6" height="6" rx="1"/></svg></div></div></div>
         <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Completed</p><p id="kpiDone" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-green-100 text-green-600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div></div></div>
         <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">In Process</p><p id="kpiProc" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-amber-100 text-amber-600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div></div>
         <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">New</p><p id="kpiNew" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-blue-100 text-blue-600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M3 12h18"/></svg></div></div></div>
+        <div class="card p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Canceled</p><p id="kpiCancel" class="text-3xl font-bold mt-1">0</p></div><div class="p-3 rounded-lg bg-slate-100 text-slate-600"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></div></div></div>
       </div>
 
       <!-- Overall completion -->
@@ -147,7 +149,7 @@
           <div class="card p-6"><h3 class="font-semibold mb-4">Status Mix by Week</h3><div style="height:320px"><canvas id="chartWeekMix"></canvas></div></div>
         </div>
         <div class="card p-6"><h3 class="font-semibold mb-4">Employee Completion % by Week</h3><div style="height:360px"><canvas id="chartPicWeek"></canvas></div></div>
-        <div class="card overflow-hidden"><div class="p-6 pb-2"><h3 class="font-semibold">Weekly Summary</h3></div><div class="overflow-x-auto"><table><thead><tr><th>Week</th><th>Total</th><th>Done</th><th>In Process</th><th>New</th><th>Completion</th></tr></thead><tbody id="weekBody"></tbody></table></div></div>
+        <div class="card overflow-hidden"><div class="p-6 pb-2"><h3 class="font-semibold">Weekly Summary</h3></div><div class="overflow-x-auto"><table><thead><tr><th>Week</th><th>Total</th><th>Done</th><th>In Process</th><th>New</th><th>Canceled</th><th>Completion</th></tr></thead><tbody id="weekBody"></tbody></table></div></div>
       </div>
 
       <!-- Tasks tab -->
@@ -155,6 +157,7 @@
         <div class="p-6 pb-2 flex items-center justify-between gap-3 flex-wrap">
           <h3 class="font-semibold">Task Tracker — edit Status & Remarks inline (auto-syncs to Google Sheet)</h3>
           <div class="flex items-center gap-2">
+            <button id="canceledBtn" class="btn btn-outline">Canceled</button>
             <button id="newTaskBtn" class="btn btn-primary">+ New Task</button>
             <span id="syncBadge">Idle</span>
           </div>
@@ -196,17 +199,26 @@ Chart.register(ChartDataLabels);
 Chart.defaults.font.family = "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto";
 Chart.defaults.color = "#334155";
 
-const COLORS = { done:"#22c55e", proc:"#f59e0b", new:"#3b82f6", bar:"#0f172a", muted:"#cbd5e1" };
+const COLORS = { done:"#22c55e", proc:"#f59e0b", new:"#3b82f6", cancel:"#64748b", bar:"#0f172a", muted:"#cbd5e1" };
 let RAW = [];
 let charts = {};
 
+function normText(s){
+  const v = String(s ?? "").toLowerCase().replace(/\s+/g," ").trim();
+  return (v==="—" || v==="-") ? "" : v;
+}
+function taskKeyFromParts(openTime,module,question,pic,action,due,week){
+  return [openTime,module,question,pic,action,due,week].map(normText).join("||");
+}
+function taskKey(r){ return taskKeyFromParts(r.openTime,r.module,r.question,r.pic,r.action,r.due,r.week); }
 function normStatus(s){
-  const v=(s||"").trim().toLowerCase();
+  const v=normText(s);
   if(v==="done"||v==="completed"||v==="complete") return "Done";
   if(v.startsWith("in")||v==="process"||v==="ongoing") return "In process";
   if(v==="new"||v==="pending"||v==="open") return "New";
+  if(v==="canceled"||v==="cancelled"||v==="cancel"||v==="ملغي"||v==="ملغية") return "Canceled";
   if(!v) return "New";
-  return s.trim();
+  return String(s).trim();
 }
 function effectiveStatus(r){ return r.done ? "Done" : normStatus(r.status); }
 function esc(v){ return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -220,9 +232,9 @@ async function load(){
     if(!res.ok) throw new Error("HTTP "+res.status);
     const text = await res.text();
     const parsed = Papa.parse(text, { header:true, skipEmptyLines:false });
+    const seenKeys = {};
     RAW = parsed.data.map((r, idx) => ({
       id: idx,
-      sheetRow: idx + 2, // header is row 1
       openTime: r["Open Time"] || "",
       module: (r["Module"]||"").trim() || "—",
       question: r["Question"]||"",
@@ -235,7 +247,12 @@ async function load(){
       newTasks: r["New Tasks"]||"",
       week: (r["Source Week"]||"").trim() || "—",
       done: (r["Done? (\u2713)"]||"").toString().toUpperCase()==="TRUE"
-    })).filter(r=>r.module!=="—"||r.pic!=="—"||r.action);
+    })).filter(r=>r.module!=="—"||r.pic!=="—"||r.action).map(r=>{
+      r.rowKey = taskKey(r);
+      r.rowKeyIndex = seenKeys[r.rowKey] || 0;
+      seenKeys[r.rowKey] = r.rowKeyIndex + 1;
+      return r;
+    });
     window.__rows = RAW;
     initFilters();
     render();
@@ -310,11 +327,12 @@ function render(){
   const total = data.length;
   const counts = {};
   data.forEach(r=>{ const s=effectiveStatus(r); counts[s]=(counts[s]||0)+1; });
-  const d = counts["Done"]||0, ip = counts["In process"]||0, nw = counts["New"]||0;
+  const d = counts["Done"]||0, ip = counts["In process"]||0, nw = counts["New"]||0, cn = counts["Canceled"]||0;
   document.getElementById("kpiTotal").textContent = total;
   document.getElementById("kpiDone").textContent = d;
   document.getElementById("kpiProc").textContent = ip;
   document.getElementById("kpiNew").textContent = nw;
+  document.getElementById("kpiCancel").textContent = cn;
   const pct = total? Math.round(d/total*100):0;
   document.getElementById("overallPct").textContent = pct+"%";
   document.getElementById("overallBar").style.width = pct+"%";
@@ -336,7 +354,7 @@ function renderStatus(counts,total){
   destroyChart("status");
   const labels = Object.keys(counts);
   const values = labels.map(l=>counts[l]);
-  const color = l => l==="Done"?COLORS.done : l==="In process"?COLORS.proc : l==="New"?COLORS.new : "#94a3b8";
+  const color = l => l==="Done"?COLORS.done : l==="In process"?COLORS.proc : l==="New"?COLORS.new : l==="Canceled"?COLORS.cancel : "#94a3b8";
   charts.status = new Chart(document.getElementById("chartStatus"),{
     type:"doughnut",
     data:{ labels, datasets:[{ data:values, backgroundColor: labels.map(color), borderWidth:2, borderColor:"#fff" }] },
@@ -358,12 +376,14 @@ function renderModule(data){
   destroyChart("module");
   const modules = uniq(data.map(r=>r.module));
   const done = modules.map(m=>data.filter(r=>r.module===m && effectiveStatus(r)==="Done").length);
-  const open = modules.map(m=>data.filter(r=>r.module===m && effectiveStatus(r)!=="Done").length);
+  const open = modules.map(m=>data.filter(r=>r.module===m && !["Done","Canceled"].includes(effectiveStatus(r))).length);
+  const canceled = modules.map(m=>data.filter(r=>r.module===m && effectiveStatus(r)==="Canceled").length);
   charts.module = new Chart(document.getElementById("chartModule"),{
     type:"bar",
     data:{ labels:modules, datasets:[
       { label:"Done", data:done, backgroundColor:COLORS.done, stack:"module" },
-      { label:"Open", data:open, backgroundColor:COLORS.proc, stack:"module" }
+      { label:"Open", data:open, backgroundColor:COLORS.proc, stack:"module" },
+      { label:"Canceled", data:canceled, backgroundColor:COLORS.cancel, stack:"module" }
     ] },
     options:{
       responsive:true, maintainAspectRatio:false,
@@ -397,7 +417,8 @@ function renderTeam(data){
     const done = rows.filter(r=>effectiveStatus(r)==="Done").length;
     const proc = rows.filter(r=>effectiveStatus(r)==="In process").length;
     const news = rows.filter(r=>effectiveStatus(r)==="New").length;
-    return `<div class="card p-4"><div class="flex items-center justify-between gap-3"><strong>${esc(name)}</strong><span class="badge badge-new">${c.pct[i]}%</span></div><div class="mini-bar mt-3"><div class="mini-fill" style="width:${c.pct[i]}%"></div></div><div class="flex gap-2 flex-wrap mt-3"><span class="badge badge-done">Done ${done}</span><span class="badge badge-proc">In Process ${proc}</span><span class="badge badge-new">New ${news}</span><span class="badge">Total ${rows.length}</span></div></div>`;
+    const canceled = rows.filter(r=>effectiveStatus(r)==="Canceled").length;
+    return `<div class="card p-4"><div class="flex items-center justify-between gap-3"><strong>${esc(name)}</strong><span class="badge badge-new">${c.pct[i]}%</span></div><div class="mini-bar mt-3"><div class="mini-fill" style="width:${c.pct[i]}%"></div></div><div class="flex gap-2 flex-wrap mt-3"><span class="badge badge-done">Done ${done}</span><span class="badge badge-proc">In Process ${proc}</span><span class="badge badge-new">New ${news}</span><span class="badge badge-cancel">Canceled ${canceled}</span><span class="badge">Total ${rows.length}</span></div></div>`;
   }).join("");
 }
 
@@ -431,7 +452,8 @@ function renderWeekMix(data){
     data:{ labels:weeks, datasets:[
       { label:"Done", data:series("Done"), backgroundColor:COLORS.done, stack:"week" },
       { label:"In process", data:series("In process"), backgroundColor:COLORS.proc, stack:"week" },
-      { label:"New", data:series("New"), backgroundColor:COLORS.new, stack:"week" }
+      { label:"New", data:series("New"), backgroundColor:COLORS.new, stack:"week" },
+      { label:"Canceled", data:series("Canceled"), backgroundColor:COLORS.cancel, stack:"week" }
     ]},
     options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{stacked:true}, y:{stacked:true, beginAtZero:true, ticks:{precision:0}} }, plugins:{ legend:{position:"bottom"}, datalabels:{ color:"#fff", font:{weight:"bold"}, formatter:v=>v||"" } } }
   });
@@ -453,9 +475,9 @@ function renderWeekTable(data){
   const weeks = uniq(data.map(r=>r.week));
   document.getElementById("weekBody").innerHTML = weeks.map(w=>{
     const rows = data.filter(r=>r.week===w), total=rows.length;
-    const done=rows.filter(r=>effectiveStatus(r)==="Done").length, proc=rows.filter(r=>effectiveStatus(r)==="In process").length, news=rows.filter(r=>effectiveStatus(r)==="New").length;
+    const done=rows.filter(r=>effectiveStatus(r)==="Done").length, proc=rows.filter(r=>effectiveStatus(r)==="In process").length, news=rows.filter(r=>effectiveStatus(r)==="New").length, canceled=rows.filter(r=>effectiveStatus(r)==="Canceled").length;
     const pct = total?Math.round(done/total*100):0;
-    return `<tr><td><strong>${esc(w)}</strong></td><td>${total}</td><td>${badge("Done", done)}</td><td>${badge("In process", proc)}</td><td>${badge("New", news)}</td><td><div class="flex items-center gap-2"><div class="mini-bar" style="width:8rem"><div class="mini-fill" style="width:${pct}%"></div></div><strong>${pct}%</strong></div></td></tr>`;
+    return `<tr><td><strong>${esc(w)}</strong></td><td>${total}</td><td>${badge("Done", done)}</td><td>${badge("In process", proc)}</td><td>${badge("New", news)}</td><td>${badge("Canceled", canceled)}</td><td><div class="flex items-center gap-2"><div class="mini-bar" style="width:8rem"><div class="mini-fill" style="width:${pct}%"></div></div><strong>${pct}%</strong></div></td></tr>`;
   }).join("");
 }
 
@@ -463,6 +485,7 @@ function badge(s, label){
   const text = label ?? s;
   if(s==="Done") return '<span class="badge badge-done">'+text+'</span>';
   if(s==="In process") return '<span class="badge badge-proc">'+text+'</span>';
+  if(s==="Canceled") return '<span class="badge badge-cancel">'+text+'</span>';
   return '<span class="badge badge-new">'+text+'</span>';
 }
 let SORT = { key: null, dir: 1 };
@@ -497,7 +520,8 @@ async function pushUpdate(row, field, value){
     const body = new URLSearchParams({
       action: "update",
       sheet: SHEET_NAME,
-      row: String(row.sheetRow),
+      rowKey: row.rowKey || taskKey(row),
+      rowKeyIndex: String(row.rowKeyIndex || 0),
       field,
       value: String(value ?? ""),
       matchOpenTime: row.openTime || "",
@@ -528,7 +552,7 @@ function renderTable(data){
   });
   tb.innerHTML = sorted.map(r=>{
     const st=effectiveStatus(r);
-    const color=st==="Done"?COLORS.done:st==="In process"?COLORS.proc:COLORS.new;
+    const color=st==="Done"?COLORS.done:st==="In process"?COLORS.proc:st==="Canceled"?COLORS.cancel:COLORS.new;
     return `<tr class="${r.done?'done-row':''}">
       <td><input type="checkbox" ${r.done?'checked':''} data-toggle="${r.id}" /></td>
       <td>${esc(r.module)}</td>
@@ -538,6 +562,7 @@ function renderTable(data){
         <option ${st==='Done'?'selected':''}>Done</option>
         <option ${st==='In process'?'selected':''}>In process</option>
         <option ${st==='New'?'selected':''}>New</option>
+        <option ${st==='Canceled'?'selected':''}>Canceled</option>
       </select></td>
       <td><textarea class="remarks-input" data-remarks="${r.id}" rows="1">${esc(r.remarks)}</textarea></td>
       <td>${esc(r.week)}</td>
@@ -547,12 +572,12 @@ function renderTable(data){
 
   tb.querySelectorAll("[data-toggle]").forEach(el=>el.addEventListener("change",()=>{
     const id=Number(el.dataset.toggle); const row=RAW.find(r=>r.id===id);
-    if(row){ row.done=el.checked; if(el.checked) row.status="Done"; pushUpdate(row,"Done? (\u2713)", el.checked?"TRUE":"FALSE"); render(); }
+    if(row){ row.done=el.checked; row.status=el.checked ? "Done" : "In process"; pushUpdate(row,"Done? (\u2713)", el.checked?"TRUE":"FALSE"); pushUpdate(row,"Status", row.status); render(); }
   }));
   tb.querySelectorAll("[data-status]").forEach(el=>el.addEventListener("change",()=>{
     const id=Number(el.dataset.status); const row=RAW.find(r=>r.id===id);
     if(row){ row.status=el.value; row.done=el.value==="Done"; pushUpdate(row,"Status",el.value);
-      if(row.done) pushUpdate(row,"Done? (\u2713)","TRUE"); render(); }
+      pushUpdate(row,"Done? (\u2713)", row.done ? "TRUE" : "FALSE"); render(); }
   }));
   tb.querySelectorAll("[data-remarks]").forEach(el=>{
     const id=Number(el.dataset.remarks); const row=RAW.find(r=>r.id===id);
@@ -593,6 +618,11 @@ document.querySelectorAll(".tab").forEach(btn=>{
 // Filter listeners
 ["fSearch","fPic","fMod","fStat","fWeek"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 document.getElementById("refreshBtn").addEventListener("click",load);
+document.getElementById("canceledBtn").addEventListener("click",()=>{
+  document.getElementById("fStat").value = "Canceled";
+  document.querySelector('[data-tab="tasks"]').click();
+  render();
+});
 // Column resizers
 (function initResizers(){
   const table = document.getElementById("taskTable");
@@ -648,7 +678,7 @@ newTaskModal.innerHTML = `
         <div>
           <label>Status</label>
           <select name="status">
-            <option>New</option><option>In process</option><option>Done</option>
+            <option>New</option><option>In process</option><option>Done</option><option>Canceled</option>
           </select>
         </div>
         <div><label>Source Week</label><input name="sourceWeek" placeholder="e.g. W23"></div>
