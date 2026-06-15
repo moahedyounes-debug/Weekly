@@ -203,7 +203,6 @@ function Dashboard() {
     try {
       await updateTask({ data: { rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, field, value } });
       setSyncStatus("saved");
-      window.setTimeout(() => setSyncStatus("idle"), 1500);
     } catch {
       setSyncStatus("error");
     }
