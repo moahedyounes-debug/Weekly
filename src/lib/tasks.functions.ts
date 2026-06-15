@@ -134,3 +134,80 @@ export const updateTaskInSheet = createServerFn({ method: "POST" })
 
     return { ok: true, rowNumber, field: data.field };
   });
+
+const strikethroughInput = z.object({
+  rowKey: z.string().min(1),
+  rowKeyIndex: z.number().int().nonnegative().default(0),
+  strikethrough: z.boolean(),
+});
+
+let cachedSheetId: number | null = null;
+async function getSheetIdByName(lovableKey: string, sheetsKey: string, name: string) {
+  if (cachedSheetId !== null) return cachedSheetId;
+  const url = `${GATEWAY}/spreadsheets/${SHEET_ID}?fields=sheets.properties`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": sheetsKey },
+  });
+  if (!res.ok) throw new Error(`Sheets metadata ${res.status}: ${await res.text()}`);
+  const json = (await res.json()) as { sheets?: { properties?: { sheetId?: number; title?: string } }[] };
+  const sheet = json.sheets?.find((s) => s.properties?.title === name);
+  if (!sheet?.properties?.sheetId && sheet?.properties?.sheetId !== 0) {
+    throw new Error(`Sheet "${name}" not found`);
+  }
+  cachedSheetId = sheet.properties!.sheetId!;
+  return cachedSheetId;
+}
+
+export const setRowStrikethroughInSheet = createServerFn({ method: "POST" })
+  .inputValidator((data) => strikethroughInput.parse(data))
+  .handler(async ({ data }) => {
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
+    if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
+
+    const rows = await getSheetRows();
+    let seen = 0;
+    let rowNumber = 0;
+    for (let i = 0; i < rows.length; i++) {
+      if (taskKeyFromRow(rows[i]) === data.rowKey) {
+        if (seen === data.rowKeyIndex) {
+          rowNumber = i + 2;
+          break;
+        }
+        seen += 1;
+      }
+    }
+    if (!rowNumber) throw new Error("Task row not found in sheet");
+
+    const sheetId = await getSheetIdByName(lovableKey, sheetsKey, SHEET_NAME);
+
+    const url = `${GATEWAY}/spreadsheets/${SHEET_ID}:batchUpdate`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": sheetsKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        requests: [
+          {
+            repeatCell: {
+              range: {
+                sheetId,
+                startRowIndex: rowNumber - 1,
+                endRowIndex: rowNumber,
+                startColumnIndex: 0,
+                endColumnIndex: HEADERS.length,
+              },
+              cell: { userEnteredFormat: { textFormat: { strikethrough: data.strikethrough } } },
+              fields: "userEnteredFormat.textFormat.strikethrough",
+            },
+          },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`Sheets format ${res.status}: ${await res.text()}`);
+
+    return { ok: true, rowNumber, strikethrough: data.strikethrough };
+  });
