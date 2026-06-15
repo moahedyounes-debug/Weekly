@@ -254,11 +254,12 @@ function Dashboard() {
         </header>
 
         {/* KPI cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <KpiCard icon={<ListTodo className="h-5 w-5" />} label="Total Tasks" value={stats.total} tone="muted" />
           <KpiCard icon={<CheckCircle2 className="h-5 w-5" />} label="Completed" value={stats.done} tone="success" />
           <KpiCard icon={<Clock className="h-5 w-5" />} label="In Process" value={stats.inProc} tone="warning" />
           <KpiCard icon={<Sparkles className="h-5 w-5" />} label="New" value={stats.news} tone="info" />
+          <KpiCard icon={<XCircle className="h-5 w-5" />} label="Canceled" value={stats.canceled} tone="muted" />
         </div>
 
         {/* Completion progress */}
@@ -279,7 +280,7 @@ function Dashboard() {
 
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6 grid gap-3 md:grid-cols-4">
+          <CardContent className="pt-6 grid gap-3 md:grid-cols-5">
             <Input placeholder="Search task, action, remarks..." value={search} onChange={e => setSearch(e.target.value)} />
             <Select value={pic} onValueChange={setPic}>
               <SelectTrigger><SelectValue placeholder="PIC" /></SelectTrigger>
@@ -302,6 +303,14 @@ function Dashboard() {
                 <SelectItem value="Done">Done</SelectItem>
                 <SelectItem value="In process">In Process</SelectItem>
                 <SelectItem value="New">New</SelectItem>
+                <SelectItem value="Canceled">Canceled</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={week} onValueChange={setWeek}>
+              <SelectTrigger><SelectValue placeholder="Week" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Weeks</SelectItem>
+                {weeks.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
               </SelectContent>
             </Select>
           </CardContent>
