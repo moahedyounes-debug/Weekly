@@ -101,32 +101,39 @@ function Dashboard() {
 
   const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
   const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
+  const weeks = useMemo(
+    () => Array.from(new Set(initial.map(t => t.sourceWeek || "—").filter(Boolean))).sort() as string[],
+    [initial]
+  );
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
     if (pic !== "all" && t.pic !== pic) return false;
     if (module !== "all" && t.module !== module) return false;
     if (status !== "all" && eff !== status) return false;
+    if (week !== "all" && (t.sourceWeek || "—") !== week) return false;
     if (search) {
       const q = search.toLowerCase();
       const blob = `${t.question} ${t.action} ${t.remarks} ${t.description} ${t.pic}`.toLowerCase();
       if (!blob.includes(q)) return false;
     }
     return true;
-  }), [tasks, pic, module, status, search]);
+  }), [tasks, pic, module, status, week, search]);
 
   const stats = useMemo(() => {
     const total = filtered.length;
     const done = filtered.filter(t => normalizeStatus(t.status, t.done) === "Done").length;
     const inProc = filtered.filter(t => normalizeStatus(t.status, t.done) === "In process").length;
     const news = filtered.filter(t => normalizeStatus(t.status, t.done) === "New").length;
-    return { total, done, inProc, news, pct: total ? Math.round((done / total) * 100) : 0 };
+    const canceled = filtered.filter(t => normalizeStatus(t.status, t.done) === "Canceled").length;
+    return { total, done, inProc, news, canceled, pct: total ? Math.round((done / total) * 100) : 0 };
   }, [filtered]);
 
   const statusData = [
     { name: "Done", value: stats.done },
     { name: "In process", value: stats.inProc },
     { name: "New", value: stats.news },
+    { name: "Canceled", value: stats.canceled },
   ].filter(d => d.value > 0);
 
   const perfData = useMemo(() => {
