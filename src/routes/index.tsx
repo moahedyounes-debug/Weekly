@@ -40,16 +40,36 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
+function normalizeText(value: unknown) {
+  const normalized = String(value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  return normalized === "—" || normalized === "-" ? "" : normalized;
+}
+
+function taskKey(task: SheetTask) {
+  return [task.openTime, task.module, task.question, task.pic, task.action, task.completionTime, task.sourceWeek]
+    .map(normalizeText)
+    .join("||");
+}
+
+function normalizeStatusValue(s: string | null): string {
+  const value = normalizeText(s);
+  if (value === "done" || value === "completed" || value === "complete") return "Done";
+  if (value.startsWith("in") || value === "process" || value === "ongoing") return "In process";
+  if (value === "new" || value === "pending" || value === "open") return "New";
+  if (value === "canceled" || value === "cancelled" || value === "cancel" || value === "ملغي" || value === "ملغية") return "Canceled";
+  return s?.trim() || "New";
+}
+
 function normalizeStatus(s: string | null, done: boolean): string {
   if (done) return "Done";
-  return s || "New";
+  return normalizeStatusValue(s);
 }
 
 const STATUS_COLORS: Record<string, string> = {
   Done: "hsl(142 71% 45%)",
   "In process": "hsl(38 92% 50%)",
   New: "hsl(217 91% 60%)",
-  Pending: "hsl(0 84% 60%)",
+  Canceled: "hsl(215 16% 47%)",
 };
 
 function Dashboard() {
