@@ -353,6 +353,7 @@ function Dashboard() {
                     <Legend />
                     <Bar dataKey="Done" stackId="a" fill={STATUS_COLORS.Done} />
                     <Bar dataKey="Open" stackId="a" fill={STATUS_COLORS["In process"]} />
+                      <Bar dataKey="Canceled" stackId="a" fill={STATUS_COLORS.Canceled} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -389,6 +390,7 @@ function Dashboard() {
                       <Badge style={{ background: STATUS_COLORS.Done, color: "white" }}>Done {p.Done}</Badge>
                       <Badge style={{ background: STATUS_COLORS["In process"], color: "white" }}>In Process {p["In process"]}</Badge>
                       <Badge style={{ background: STATUS_COLORS.New, color: "white" }}>New {p.New}</Badge>
+                      <Badge style={{ background: STATUS_COLORS.Canceled, color: "white" }}>Canceled {p.Canceled}</Badge>
                       <Badge variant="outline">Total {p.Total}</Badge>
                     </div>
                   </CardContent>
@@ -431,6 +433,7 @@ function Dashboard() {
                       <Bar dataKey="Done" stackId="a" fill={STATUS_COLORS.Done} />
                       <Bar dataKey="In process" stackId="a" fill={STATUS_COLORS["In process"]} />
                       <Bar dataKey="New" stackId="a" fill={STATUS_COLORS.New} />
+                      <Bar dataKey="Canceled" stackId="a" fill={STATUS_COLORS.Canceled} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
