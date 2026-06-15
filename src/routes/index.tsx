@@ -467,6 +467,7 @@ function Dashboard() {
                       <TableHead className="text-center">Done</TableHead>
                       <TableHead className="text-center">In Process</TableHead>
                       <TableHead className="text-center">New</TableHead>
+                      <TableHead className="text-center">Canceled</TableHead>
                       <TableHead>Completion</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -478,6 +479,7 @@ function Dashboard() {
                         <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS.Done, color: "white" }}>{w.Done}</Badge></TableCell>
                         <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS["In process"], color: "white" }}>{w["In process"]}</Badge></TableCell>
                         <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS.New, color: "white" }}>{w.New}</Badge></TableCell>
+                        <TableCell className="text-center"><Badge style={{ background: STATUS_COLORS.Canceled, color: "white" }}>{w.Canceled}</Badge></TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={w.Completion} className="h-2 w-32" />
@@ -494,8 +496,12 @@ function Dashboard() {
 
           <TabsContent value="tasks">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-3">
                 <CardTitle>Task Tracker — set status inline</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setStatus("Canceled")}>Canceled</Button>
+                  <Badge variant={syncStatus === "error" ? "destructive" : "secondary"}>{syncStatus === "saving" ? "Saving…" : syncStatus === "saved" ? "Saved ✓" : syncStatus === "error" ? "Save failed" : "Idle"}</Badge>
+                </div>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
@@ -507,6 +513,7 @@ function Dashboard() {
                       <TableHead>PIC</TableHead>
                       <TableHead>Action</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Remarks</TableHead>
                       <TableHead>Week</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -538,12 +545,20 @@ function Dashboard() {
                               </SelectContent>
                             </Select>
                           </TableCell>
+                          <TableCell className="min-w-64">
+                            <Textarea
+                              value={t.remarks || ""}
+                              onChange={(e) => setTasks(prev => prev.map(row => row.id === t.id ? { ...row, remarks: e.target.value } : row))}
+                              onBlur={(e) => setRemarksFor(t, e.target.value)}
+                              className="min-h-9 text-sm"
+                            />
+                          </TableCell>
                           <TableCell>{t.sourceWeek}</TableCell>
                         </TableRow>
                       );
                     })}
                     {filtered.length === 0 && (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
