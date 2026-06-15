@@ -500,7 +500,35 @@ function Dashboard() {
                 <CardTitle>Task Tracker — set status inline</CardTitle>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => setStatus("Canceled")}>Canceled</Button>
-                  <Badge variant={syncStatus === "error" ? "destructive" : "secondary"}>{syncStatus === "saving" ? "Saving…" : syncStatus === "saved" ? "Saved ✓" : syncStatus === "error" ? "Save failed" : "Idle"}</Badge>
+                  <Badge
+                    variant={syncStatus === "error" ? "destructive" : "secondary"}
+                    className={
+                      syncStatus === "saving"
+                        ? "bg-amber-500 text-white hover:bg-amber-500"
+                        : syncStatus === "saved"
+                        ? "bg-emerald-600 text-white hover:bg-emerald-600"
+                        : ""
+                    }
+                  >
+                    <span
+                      className={`mr-1.5 inline-block h-2 w-2 rounded-full ${
+                        syncStatus === "saving"
+                          ? "bg-white animate-pulse"
+                          : syncStatus === "saved"
+                          ? "bg-white"
+                          : syncStatus === "error"
+                          ? "bg-white"
+                          : "bg-muted-foreground"
+                      }`}
+                    />
+                    {syncStatus === "saving"
+                      ? "Saving…"
+                      : syncStatus === "saved"
+                      ? "Saved ✓"
+                      : syncStatus === "error"
+                      ? "Save failed"
+                      : "Idle"}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="overflow-x-auto">
