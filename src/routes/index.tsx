@@ -88,7 +88,7 @@ function Dashboard() {
   const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
   const updateTask = useServerFn(updateTaskInSheet);
   const [tasks, setTasks] = useState<DashboardTask[]>(() => withRowKeys(initial));
-  const [syncStatus, setSyncStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [syncStatus, setSyncStatus] = useState<"saving" | "saved" | "error">("saved");
   useEffect(() => {
     setTasks(withRowKeys(initial));
   }, [initial]);
