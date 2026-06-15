@@ -523,11 +523,9 @@ function Dashboard() {
                     />
                     {syncStatus === "saving"
                       ? "Saving…"
-                      : syncStatus === "saved"
-                      ? "Saved ✓"
                       : syncStatus === "error"
                       ? "Save failed"
-                      : "Idle"}
+                      : "Saved ✓"}
                   </Badge>
                 </div>
               </CardHeader>
