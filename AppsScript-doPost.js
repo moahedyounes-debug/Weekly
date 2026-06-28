@@ -55,7 +55,9 @@ function doPost(e) {
   }
 
   let targetRow = 0;
-  const data = lastRow > 1 ? sh.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
+  // Use display values so dates/numbers match the CSV-formatted values the dashboard sends.
+  const data = lastRow > 1 ? sh.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues() : [];
+
 
   if (p.rowKey) {
     const wantedIndex = Number(p.rowKeyIndex || 0);
