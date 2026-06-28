@@ -570,7 +570,7 @@ async function pushUpdate(row, field, value){
       matchCompletionTime: row.due || "",
       matchSourceWeek: row.week || ""
     });
-    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", body });
+    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", keepalive:true, body });
     setSyncStatus("ok");
     setTimeout(()=>setSyncStatus("","Idle"), 1500);
   }catch(e){
@@ -769,7 +769,7 @@ newTaskModal.querySelector("#newTaskForm").addEventListener("submit", async (e)=
   saveBtn.disabled = true; saveBtn.textContent = "Saving…";
   setSyncStatus("saving","Adding task…");
   try{
-    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", body: new URLSearchParams(payload) });
+    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", keepalive:true, body: new URLSearchParams(payload) });
     setSyncStatus("ok","Task added ✓");
     closeNewTask();
     setTimeout(()=>{ load(); setSyncStatus("","Idle"); }, 800);
