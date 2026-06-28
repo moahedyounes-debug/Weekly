@@ -510,7 +510,7 @@ function Dashboard() {
               <CardHeader className="flex flex-row items-center justify-between gap-3">
                 <CardTitle>Task Tracker — set status inline</CardTitle>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setStatus("Canceled")}>Canceled</Button>
+                  <Button variant="outline" size="sm" onClick={() => setStatus(["Canceled"])}>Canceled</Button>
                   <Badge
                     variant={syncStatus === "error" ? "destructive" : "secondary"}
                     className={
