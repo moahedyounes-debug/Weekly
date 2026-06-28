@@ -95,10 +95,10 @@ function Dashboard() {
   }, [initial]);
 
   const [search, setSearch] = useState("");
-  const [pic, setPic] = useState<string>("all");
-  const [module, setModule] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
-  const [week, setWeek] = useState<string>("all");
+  const [pic, setPic] = useState<string[]>([]);
+  const [module, setModule] = useState<string[]>([]);
+  const [status, setStatus] = useState<string[]>([]);
+  const [week, setWeek] = useState<string[]>([]);
 
   const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
   const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
@@ -109,10 +109,10 @@ function Dashboard() {
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
-    if (pic !== "all" && t.pic !== pic) return false;
-    if (module !== "all" && t.module !== module) return false;
-    if (status !== "all" && eff !== status) return false;
-    if (week !== "all" && (t.sourceWeek || "—") !== week) return false;
+    if (pic.length && !pic.includes(t.pic)) return false;
+    if (module.length && !module.includes(t.module)) return false;
+    if (status.length && !status.includes(eff)) return false;
+    if (week.length && !week.includes(t.sourceWeek || "—")) return false;
     if (search) {
       const q = search.toLowerCase();
       const blob = `${t.question} ${t.action} ${t.remarks} ${t.description} ${t.pic}`.toLowerCase();
@@ -120,6 +120,7 @@ function Dashboard() {
     }
     return true;
   }), [tasks, pic, module, status, week, search]);
+
 
   const stats = useMemo(() => {
     const total = filtered.length;
