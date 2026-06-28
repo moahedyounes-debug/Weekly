@@ -293,37 +293,10 @@ function Dashboard() {
         <Card>
           <CardContent className="pt-6 grid gap-3 md:grid-cols-5">
             <Input placeholder="Search task, action, remarks..." value={search} onChange={e => setSearch(e.target.value)} />
-            <Select value={pic} onValueChange={setPic}>
-              <SelectTrigger><SelectValue placeholder="PIC" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All PICs</SelectItem>
-                {pics.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={module} onValueChange={setModule}>
-              <SelectTrigger><SelectValue placeholder="Module" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Modules</SelectItem>
-                {modules.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Done">Done</SelectItem>
-                <SelectItem value="In process">In Process</SelectItem>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Canceled">Canceled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={week} onValueChange={setWeek}>
-              <SelectTrigger><SelectValue placeholder="Week" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Weeks</SelectItem>
-                {weeks.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <MultiSelect options={pics} selected={pic} onChange={setPic} placeholder="All PICs" />
+            <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
+            <MultiSelect options={["Done", "In process", "New", "Canceled"]} selected={status} onChange={setStatus} placeholder="All Status" />
+            <MultiSelect options={weeks} selected={week} onChange={setWeek} placeholder="All Weeks" />
           </CardContent>
         </Card>
 
