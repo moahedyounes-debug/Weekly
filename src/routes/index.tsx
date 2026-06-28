@@ -109,8 +109,8 @@ function Dashboard() {
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
-    if (pic.length && !pic.includes(t.pic)) return false;
-    if (module.length && !module.includes(t.module)) return false;
+    if (pic.length && !pic.includes(t.pic || "")) return false;
+    if (module.length && !module.includes(t.module || "")) return false;
     if (status.length && !status.includes(eff)) return false;
     if (week.length && !week.includes(t.sourceWeek || "—")) return false;
     if (search) {
