@@ -141,20 +141,10 @@ const strikethroughInput = z.object({
   strikethrough: z.boolean(),
 });
 
-let cachedSheetId: number | null = null;
-async function getSheetIdByName(lovableKey: string, sheetsKey: string, name: string) {
-  if (cachedSheetId !== null) return cachedSheetId;
-  const url = `${GATEWAY}/spreadsheets/${SHEET_ID}?fields=sheets.properties`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": sheetsKey },
-  });
-  if (!res.ok) throw new Error(`Sheets metadata ${res.status}: ${await res.text()}`);
-  const json = (await res.json()) as { sheets?: { properties?: { sheetId?: number; title?: string } }[] };
-  const sheet = json.sheets?.find((s) => s.properties?.title === name);
-  if (!sheet?.properties?.sheetId && sheet?.properties?.sheetId !== 0) {
-    throw new Error(`Sheet "${name}" not found`);
-  }
-  cachedSheetId = sheet.properties!.sheetId!;
+// "Sheet1" is the first/default sheet (gid=0). Hardcoding avoids hitting the
+// Sheets metadata read quota on every strikethrough call (which caused 429s).
+let cachedSheetId: number = 0;
+async function getSheetIdByName(_lovableKey: string, _sheetsKey: string, _name: string) {
   return cachedSheetId;
 }
 
