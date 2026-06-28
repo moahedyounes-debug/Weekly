@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,10 +96,10 @@ function Dashboard() {
   }, [initial]);
 
   const [search, setSearch] = useState("");
-  const [pic, setPic] = useState<string>("all");
-  const [module, setModule] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
-  const [week, setWeek] = useState<string>("all");
+  const [pic, setPic] = useState<string[]>([]);
+  const [module, setModule] = useState<string[]>([]);
+  const [status, setStatus] = useState<string[]>([]);
+  const [week, setWeek] = useState<string[]>([]);
 
   const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
   const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
@@ -109,10 +110,10 @@ function Dashboard() {
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
-    if (pic !== "all" && t.pic !== pic) return false;
-    if (module !== "all" && t.module !== module) return false;
-    if (status !== "all" && eff !== status) return false;
-    if (week !== "all" && (t.sourceWeek || "—") !== week) return false;
+    if (pic.length && !pic.includes(t.pic || "")) return false;
+    if (module.length && !module.includes(t.module || "")) return false;
+    if (status.length && !status.includes(eff)) return false;
+    if (week.length && !week.includes(t.sourceWeek || "—")) return false;
     if (search) {
       const q = search.toLowerCase();
       const blob = `${t.question} ${t.action} ${t.remarks} ${t.description} ${t.pic}`.toLowerCase();
@@ -120,6 +121,7 @@ function Dashboard() {
     }
     return true;
   }), [tasks, pic, module, status, week, search]);
+
 
   const stats = useMemo(() => {
     const total = filtered.length;
@@ -292,37 +294,10 @@ function Dashboard() {
         <Card>
           <CardContent className="pt-6 grid gap-3 md:grid-cols-5">
             <Input placeholder="Search task, action, remarks..." value={search} onChange={e => setSearch(e.target.value)} />
-            <Select value={pic} onValueChange={setPic}>
-              <SelectTrigger><SelectValue placeholder="PIC" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All PICs</SelectItem>
-                {pics.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={module} onValueChange={setModule}>
-              <SelectTrigger><SelectValue placeholder="Module" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Modules</SelectItem>
-                {modules.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Done">Done</SelectItem>
-                <SelectItem value="In process">In Process</SelectItem>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Canceled">Canceled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={week} onValueChange={setWeek}>
-              <SelectTrigger><SelectValue placeholder="Week" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Weeks</SelectItem>
-                {weeks.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <MultiSelect options={pics} selected={pic} onChange={setPic} placeholder="All PICs" />
+            <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
+            <MultiSelect options={["Done", "In process", "New", "Canceled"]} selected={status} onChange={setStatus} placeholder="All Status" />
+            <MultiSelect options={weeks} selected={week} onChange={setWeek} placeholder="All Weeks" />
           </CardContent>
         </Card>
 
@@ -509,7 +484,7 @@ function Dashboard() {
               <CardHeader className="flex flex-row items-center justify-between gap-3">
                 <CardTitle>Task Tracker — set status inline</CardTitle>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setStatus("Canceled")}>Canceled</Button>
+                  <Button variant="outline" size="sm" onClick={() => setStatus(["Canceled"])}>Canceled</Button>
                   <Badge
                     variant={syncStatus === "error" ? "destructive" : "secondary"}
                     className={
