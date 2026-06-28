@@ -654,10 +654,11 @@ document.querySelectorAll(".tab").forEach(btn=>{
   });
 });
 // Filter listeners
-["fSearch","fPic","fMod","fStat","fWeek"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+document.getElementById("fSearch").addEventListener("input",render);
 document.getElementById("refreshBtn").addEventListener("click",load);
 document.getElementById("canceledBtn").addEventListener("click",()=>{
-  document.getElementById("fStat").value = "Canceled";
+  FILTER.stat = ["Canceled"];
+  buildMultiSelect("stat", uniq(RAW.map(effectiveStatus)));
   document.querySelector('[data-tab="tasks"]').click();
   render();
 });
