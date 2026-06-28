@@ -98,5 +98,29 @@ function doPost(e) {
   }
 
   sh.getRange(targetRow, targetCol).setValue(p.value);
+
+  // Auto strikethrough whenever Status becomes Done OR Done? checkbox is TRUE.
+  const fieldNorm = norm(p.field).replace(/[^a-z0-9 ]/g, "");
+  const valNorm = norm(p.value);
+  let shouldStrike = null;
+  if (fieldNorm === "status") shouldStrike = (valNorm === "done");
+  if (fieldNorm.indexOf("done") === 0) shouldStrike = (valNorm === "true" || valNorm === "yes" || valNorm === "1");
+  if (shouldStrike !== null) {
+    const rowRange = sh.getRange(targetRow, 1, 1, lastCol);
+    rowRange.setFontLine(shouldStrike ? "line-through" : "none");
+    // Keep Status & Done? in sync as well
+    const statusCol = findCol("Status");
+    const doneCol = findCol("Done? (\u2713)") || findCol("Done?") || findCol("Done");
+    if (shouldStrike) {
+      if (statusCol) sh.getRange(targetRow, statusCol).setValue("Done");
+      if (doneCol) sh.getRange(targetRow, doneCol).setValue(true);
+    } else if (fieldNorm.indexOf("done") === 0) {
+      // unchecking Done resets status to In process if it was Done
+      if (statusCol && norm(sh.getRange(targetRow, statusCol).getValue()) === "done") {
+        sh.getRange(targetRow, statusCol).setValue("In process");
+      }
+    }
+  }
+
   return ContentService.createTextOutput("ok row=" + targetRow + " col=" + targetCol);
 }
