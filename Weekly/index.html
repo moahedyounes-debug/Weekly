@@ -283,31 +283,54 @@ async function load(){
 }
 
 function uniq(arr){ return [...new Set(arr.filter(Boolean))].sort(); }
-function initFilters(){
-  fillSelect("fPic", uniq(RAW.map(r=>r.pic)));
-  fillSelect("fMod", uniq(RAW.map(r=>r.module)));
-  fillSelect("fStat", uniq(RAW.map(effectiveStatus)));
-  fillSelect("fWeek", uniq(RAW.map(r=>r.week)));
+const FILTER = { pic:[], mod:[], stat:[], week:[] };
+const MS_PLACEHOLDERS = { pic:"All PICs", mod:"All Modules", stat:"All Status", week:"All Weeks" };
+
+function buildMultiSelect(key, options){
+  const root = document.querySelector(`.ms[data-ms="${key}"]`);
+  if(!root) return;
+  const panel = root.querySelector(".ms-panel");
+  const label = root.querySelector(".ms-label");
+  const updateLabel = ()=>{
+    const sel = FILTER[key];
+    if(sel.length===0){ label.textContent = MS_PLACEHOLDERS[key]; label.classList.add("placeholder"); }
+    else if(sel.length===1){ label.textContent = sel[0]; label.classList.remove("placeholder"); }
+    else { label.textContent = sel.length+" selected"; label.classList.remove("placeholder"); }
+  };
+  panel.innerHTML = `<div class="ms-head"><button type="button" class="all">Select all</button><button type="button" class="clear">Clear</button></div>` +
+    options.map(v=>`<label class="ms-opt"><input type="checkbox" value="${esc(v)}" ${FILTER[key].includes(v)?'checked':''}/><span>${esc(v)}</span></label>`).join("");
+  panel.querySelector(".all").onclick = ()=>{ FILTER[key]=options.slice(); panel.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=true); updateLabel(); render(); };
+  panel.querySelector(".clear").onclick = ()=>{ FILTER[key]=[]; panel.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false); updateLabel(); render(); };
+  panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener("change", ()=>{
+      const v = cb.value;
+      if(cb.checked){ if(!FILTER[key].includes(v)) FILTER[key].push(v); }
+      else { FILTER[key] = FILTER[key].filter(x=>x!==v); }
+      updateLabel(); render();
+    });
+  });
+  const btn = root.querySelector(".ms-btn");
+  btn.onclick = (e)=>{ e.stopPropagation(); document.querySelectorAll(".ms.open").forEach(o=>{ if(o!==root) o.classList.remove("open"); }); root.classList.toggle("open"); };
+  updateLabel();
 }
-function fillSelect(id, vals){
-  const el = document.getElementById(id);
-  const first = el.querySelector("option");
-  el.innerHTML = "";
-  el.appendChild(first);
-  vals.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
+document.addEventListener("click", (e)=>{
+  document.querySelectorAll(".ms.open").forEach(o=>{ if(!o.contains(e.target)) o.classList.remove("open"); });
+});
+
+function initFilters(){
+  buildMultiSelect("pic",  uniq(RAW.map(r=>r.pic)));
+  buildMultiSelect("mod",  uniq(RAW.map(r=>r.module)));
+  buildMultiSelect("stat", uniq(RAW.map(effectiveStatus)));
+  buildMultiSelect("week", uniq(RAW.map(r=>r.week)));
 }
 
 function filtered(){
   const s = document.getElementById("fSearch").value.toLowerCase().trim();
-  const p = document.getElementById("fPic").value;
-  const m = document.getElementById("fMod").value;
-  const st = document.getElementById("fStat").value;
-  const w = document.getElementById("fWeek").value;
   return RAW.filter(r=>{
-    if(p && r.pic!==p) return false;
-    if(m && r.module!==m) return false;
-    if(st && effectiveStatus(r)!==st) return false;
-    if(w && r.week!==w) return false;
+    if(FILTER.pic.length  && !FILTER.pic.includes(r.pic)) return false;
+    if(FILTER.mod.length  && !FILTER.mod.includes(r.module)) return false;
+    if(FILTER.stat.length && !FILTER.stat.includes(effectiveStatus(r))) return false;
+    if(FILTER.week.length && !FILTER.week.includes(r.week)) return false;
     if(s){
       const hay = (r.question+" "+r.action+" "+r.remarks+" "+r.description).toLowerCase();
       if(!hay.includes(s)) return false;
