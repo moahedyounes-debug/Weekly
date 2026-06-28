@@ -45,6 +45,21 @@
   .remarks-input{width:100%;min-width:180px;border:1px solid transparent;background:transparent;padding:.3rem .4rem;border-radius:.4rem;font:inherit;color:inherit;resize:vertical;min-height:2.2rem}
   .remarks-input:hover{border-color:#e5e7eb;background:#fff}
   .remarks-input:focus{outline:none;border-color:#94a3b8;background:#fff;box-shadow:0 0 0 3px rgba(148,163,184,.25)}
+  .ms{position:relative}
+  .ms-btn{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:.55rem .75rem;font-size:.9rem;cursor:pointer;gap:.5rem}
+  .ms-btn:hover{border-color:#94a3b8}
+  .ms-btn .ms-label{flex:1;text-align:left;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ms-btn .ms-label.placeholder{color:#94a3b8}
+  .ms-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 25px -10px rgba(0,0,0,.2);z-index:30;max-height:260px;overflow:auto;display:none}
+  .ms.open .ms-panel{display:block}
+  .ms-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-size:.72rem}
+  .ms-head button{background:none;border:0;cursor:pointer;font-size:.75rem}
+  .ms-head .all{color:#0f172a;font-weight:600}
+  .ms-head .clear{color:#64748b}
+  .ms-opt{display:flex;align-items:center;gap:.5rem;padding:.45rem .75rem;font-size:.85rem;cursor:pointer}
+  .ms-opt:hover{background:#f1f5f9}
+  .ms-opt input{width:auto;margin:0;padding:0}
+  .ms-caret{opacity:.55}
   #syncBadge{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;padding:.2rem .6rem;border-radius:9999px;background:#f1f5f9;color:#475569}
   #syncBadge.saving{background:#fef3c7;color:#92400e}
   #syncBadge.ok{background:#dcfce7;color:#166534}
@@ -115,10 +130,10 @@
       <!-- Filters -->
       <div class="card p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
         <input id="fSearch" placeholder="Search task, action, remarks…" />
-        <select id="fPic"><option value="">All PICs</option></select>
-        <select id="fMod"><option value="">All Modules</option></select>
-        <select id="fStat"><option value="">All Status</option></select>
-        <select id="fWeek"><option value="">All Weeks</option></select>
+        <div class="ms" data-ms="pic"><button type="button" class="ms-btn"><span class="ms-label placeholder">All PICs</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
+        <div class="ms" data-ms="mod"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Modules</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
+        <div class="ms" data-ms="stat"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Status</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
+        <div class="ms" data-ms="week"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Weeks</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
       </div>
 
       <!-- Tabs -->
@@ -268,31 +283,54 @@ async function load(){
 }
 
 function uniq(arr){ return [...new Set(arr.filter(Boolean))].sort(); }
-function initFilters(){
-  fillSelect("fPic", uniq(RAW.map(r=>r.pic)));
-  fillSelect("fMod", uniq(RAW.map(r=>r.module)));
-  fillSelect("fStat", uniq(RAW.map(effectiveStatus)));
-  fillSelect("fWeek", uniq(RAW.map(r=>r.week)));
+const FILTER = { pic:[], mod:[], stat:[], week:[] };
+const MS_PLACEHOLDERS = { pic:"All PICs", mod:"All Modules", stat:"All Status", week:"All Weeks" };
+
+function buildMultiSelect(key, options){
+  const root = document.querySelector(`.ms[data-ms="${key}"]`);
+  if(!root) return;
+  const panel = root.querySelector(".ms-panel");
+  const label = root.querySelector(".ms-label");
+  const updateLabel = ()=>{
+    const sel = FILTER[key];
+    if(sel.length===0){ label.textContent = MS_PLACEHOLDERS[key]; label.classList.add("placeholder"); }
+    else if(sel.length===1){ label.textContent = sel[0]; label.classList.remove("placeholder"); }
+    else { label.textContent = sel.length+" selected"; label.classList.remove("placeholder"); }
+  };
+  panel.innerHTML = `<div class="ms-head"><button type="button" class="all">Select all</button><button type="button" class="clear">Clear</button></div>` +
+    options.map(v=>`<label class="ms-opt"><input type="checkbox" value="${esc(v)}" ${FILTER[key].includes(v)?'checked':''}/><span>${esc(v)}</span></label>`).join("");
+  panel.querySelector(".all").onclick = ()=>{ FILTER[key]=options.slice(); panel.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=true); updateLabel(); render(); };
+  panel.querySelector(".clear").onclick = ()=>{ FILTER[key]=[]; panel.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false); updateLabel(); render(); };
+  panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener("change", ()=>{
+      const v = cb.value;
+      if(cb.checked){ if(!FILTER[key].includes(v)) FILTER[key].push(v); }
+      else { FILTER[key] = FILTER[key].filter(x=>x!==v); }
+      updateLabel(); render();
+    });
+  });
+  const btn = root.querySelector(".ms-btn");
+  btn.onclick = (e)=>{ e.stopPropagation(); document.querySelectorAll(".ms.open").forEach(o=>{ if(o!==root) o.classList.remove("open"); }); root.classList.toggle("open"); };
+  updateLabel();
 }
-function fillSelect(id, vals){
-  const el = document.getElementById(id);
-  const first = el.querySelector("option");
-  el.innerHTML = "";
-  el.appendChild(first);
-  vals.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
+document.addEventListener("click", (e)=>{
+  document.querySelectorAll(".ms.open").forEach(o=>{ if(!o.contains(e.target)) o.classList.remove("open"); });
+});
+
+function initFilters(){
+  buildMultiSelect("pic",  uniq(RAW.map(r=>r.pic)));
+  buildMultiSelect("mod",  uniq(RAW.map(r=>r.module)));
+  buildMultiSelect("stat", uniq(RAW.map(effectiveStatus)));
+  buildMultiSelect("week", uniq(RAW.map(r=>r.week)));
 }
 
 function filtered(){
   const s = document.getElementById("fSearch").value.toLowerCase().trim();
-  const p = document.getElementById("fPic").value;
-  const m = document.getElementById("fMod").value;
-  const st = document.getElementById("fStat").value;
-  const w = document.getElementById("fWeek").value;
   return RAW.filter(r=>{
-    if(p && r.pic!==p) return false;
-    if(m && r.module!==m) return false;
-    if(st && effectiveStatus(r)!==st) return false;
-    if(w && r.week!==w) return false;
+    if(FILTER.pic.length  && !FILTER.pic.includes(r.pic)) return false;
+    if(FILTER.mod.length  && !FILTER.mod.includes(r.module)) return false;
+    if(FILTER.stat.length && !FILTER.stat.includes(effectiveStatus(r))) return false;
+    if(FILTER.week.length && !FILTER.week.includes(r.week)) return false;
     if(s){
       const hay = (r.question+" "+r.action+" "+r.remarks+" "+r.description).toLowerCase();
       if(!hay.includes(s)) return false;
@@ -532,7 +570,7 @@ async function pushUpdate(row, field, value){
       matchCompletionTime: row.due || "",
       matchSourceWeek: row.week || ""
     });
-    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", body });
+    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", keepalive:true, body });
     setSyncStatus("ok");
     setTimeout(()=>setSyncStatus("","Idle"), 1500);
   }catch(e){
@@ -616,10 +654,11 @@ document.querySelectorAll(".tab").forEach(btn=>{
   });
 });
 // Filter listeners
-["fSearch","fPic","fMod","fStat","fWeek"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+document.getElementById("fSearch").addEventListener("input",render);
 document.getElementById("refreshBtn").addEventListener("click",load);
 document.getElementById("canceledBtn").addEventListener("click",()=>{
-  document.getElementById("fStat").value = "Canceled";
+  FILTER.stat = ["Canceled"];
+  buildMultiSelect("stat", uniq(RAW.map(effectiveStatus)));
   document.querySelector('[data-tab="tasks"]').click();
   render();
 });
@@ -730,7 +769,7 @@ newTaskModal.querySelector("#newTaskForm").addEventListener("submit", async (e)=
   saveBtn.disabled = true; saveBtn.textContent = "Saving…";
   setSyncStatus("saving","Adding task…");
   try{
-    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", body: new URLSearchParams(payload) });
+    await fetch(APPS_SCRIPT_URL, { method:"POST", mode:"no-cors", keepalive:true, body: new URLSearchParams(payload) });
     setSyncStatus("ok","Task added ✓");
     closeNewTask();
     setTimeout(()=>{ load(); setSyncStatus("","Idle"); }, 800);
