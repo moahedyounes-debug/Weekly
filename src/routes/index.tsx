@@ -22,8 +22,15 @@ import { CheckCircle2, Clock, Sparkles, ListTodo, Download, TrendingUp, RefreshC
 import { Button } from "@/components/ui/button";
 
 const tasksQueryOptions = queryOptions({
-  queryKey: ["sheet-tasks"],
-  queryFn: () => fetchTasksFromSheet(),
+  queryKey: ["sheet-tasks"] as const,
+  queryFn: async (): Promise<SheetTask[]> => {
+    try {
+      return await fetchTasksFromSheet();
+    } catch (err) {
+      console.error("fetchTasksFromSheet failed:", err);
+      return [];
+    }
+  },
   staleTime: 60_000,
 });
 
@@ -34,7 +41,14 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Interactive tracker for completed, pending, and in-process tasks with team performance." },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(tasksQueryOptions),
+  loader: async ({ context }) => {
+    try {
+      await context.queryClient.ensureQueryData(tasksQueryOptions);
+    } catch (err) {
+      console.error("tasks loader error:", err);
+      context.queryClient.setQueryData(tasksQueryOptions.queryKey, [] as SheetTask[]);
+    }
+  },
   errorComponent: ({ error }) => (
     <div className="p-8 text-destructive">Failed to load sheet: {error.message}</div>
   ),
