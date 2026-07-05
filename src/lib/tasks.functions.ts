@@ -71,23 +71,28 @@ async function getSheetRows() {
 
 export const fetchTasksFromSheet = createServerFn({ method: "GET" }).handler(
   async (): Promise<SheetTask[]> => {
-    const rows = await getSheetRows();
-    return rows
-      .filter((r) => r.some((c) => (c ?? "").trim() !== ""))
-      .map((r) => ({
-        openTime: r[0] || null,
-        module: r[1] || null,
-        question: r[2] || null,
-        pic: r[3] || null,
-        action: r[4] || null,
-        completionTime: r[5] || null,
-        status: r[6] || null,
-        remarks: r[7] || null,
-        description: r[8] || null,
-        newTasks: r[9] || null,
-        sourceWeek: r[10] || null,
-        done: (r[11] || "").toUpperCase() === "TRUE" || (r[6] || "").toLowerCase() === "done",
-      }));
+    try {
+      const rows = await getSheetRows();
+      return rows
+        .filter((r) => r.some((c) => (c ?? "").trim() !== ""))
+        .map((r) => ({
+          openTime: r[0] || null,
+          module: r[1] || null,
+          question: r[2] || null,
+          pic: r[3] || null,
+          action: r[4] || null,
+          completionTime: r[5] || null,
+          status: r[6] || null,
+          remarks: r[7] || null,
+          description: r[8] || null,
+          newTasks: r[9] || null,
+          sourceWeek: r[10] || null,
+          done: (r[11] || "").toUpperCase() === "TRUE" || (r[6] || "").toLowerCase() === "done",
+        }));
+    } catch (error) {
+      console.error("Unable to load Google Sheet rows; rendering empty dashboard fallback:", error);
+      return [];
+    }
   }
 );
 
