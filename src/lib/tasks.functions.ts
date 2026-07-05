@@ -8,6 +8,7 @@ const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
 const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)"] as const;
 
 export type SheetTask = {
+  rowNumber: number;
   openTime: string | null;
   module: string | null;
   question: string | null;
@@ -23,11 +24,33 @@ export type SheetTask = {
 };
 
 const updateTaskInput = z.object({
-  rowKey: z.string().min(1),
+  rowNumber: z.number().int().min(2).optional(),
+  rowKey: z.string().min(1).optional(),
   rowKeyIndex: z.number().int().nonnegative().default(0),
   field: z.enum(["Status", "Remarks", "Done? (✓)"]),
   value: z.string(),
 });
+
+function formatOpenTimeMdd(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+
+  const iso = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (iso) return `${Number(iso[2])}${iso[3].padStart(2, "0")}`;
+
+  const slash = raw.match(/^(\d{1,2})[-/](\d{1,2})(?:[-/]\d{2,4})?$/);
+  if (slash) return `${Number(slash[1])}${slash[2].padStart(2, "0")}`;
+
+  const compact = raw.replace(/\D/g, "");
+  if (/^\d{8}$/.test(compact)) return `${Number(compact.slice(4, 6))}${compact.slice(6, 8)}`;
+  if (/^\d{4}$/.test(compact)) return `${Number(compact.slice(0, 2))}${compact.slice(2, 4)}`;
+  if (/^\d{3}$/.test(compact)) return compact;
+
+  const date = new Date(raw);
+  if (!Number.isNaN(date.getTime())) return `${date.getMonth() + 1}${String(date.getDate()).padStart(2, "0")}`;
+
+  return raw;
+}
 
 function normalizeCell(value: unknown) {
   const normalized = String(value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -35,7 +58,21 @@ function normalizeCell(value: unknown) {
 }
 
 function taskKeyFromRow(row: string[]) {
-  return [row[0], row[1], row[2], row[3], row[4], row[5], row[10]].map(normalizeCell).join("||");
+  return [formatOpenTimeMdd(row[0]), row[1], row[2], row[3], row[4], row[5], row[10]].map(normalizeCell).join("||");
+}
+
+function findRowNumberByKey(rows: string[][], rowKey?: string, rowKeyIndex = 0) {
+  if (!rowKey) return 0;
+
+  let seen = 0;
+  for (let i = 0; i < rows.length; i++) {
+    if (taskKeyFromRow(rows[i]) === rowKey) {
+      if (seen === rowKeyIndex) return i + 2;
+      seen += 1;
+    }
+  }
+
+  return 0;
 }
 
 function columnLetter(index: number) {
@@ -74,9 +111,11 @@ export const fetchTasksFromSheet = createServerFn({ method: "GET" }).handler(
     try {
       const rows = await getSheetRows();
       return rows
-        .filter((r) => r.some((c) => (c ?? "").trim() !== ""))
-        .map((r) => ({
-          openTime: r[0] || null,
+        .map((r, index) => ({ row: r, rowNumber: index + 2 }))
+        .filter(({ row }) => row.some((c) => (c ?? "").trim() !== ""))
+        .map(({ row: r, rowNumber }) => ({
+          rowNumber,
+          openTime: formatOpenTimeMdd(r[0]),
           module: r[1] || null,
           question: r[2] || null,
           pic: r[3] || null,
@@ -103,18 +142,7 @@ export const updateTaskInSheet = createServerFn({ method: "POST" })
     const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
     if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
 
-    const rows = await getSheetRows();
-    let seen = 0;
-    let rowNumber = 0;
-    for (let i = 0; i < rows.length; i++) {
-      if (taskKeyFromRow(rows[i]) === data.rowKey) {
-        if (seen === data.rowKeyIndex) {
-          rowNumber = i + 2;
-          break;
-        }
-        seen += 1;
-      }
-    }
+    const rowNumber = data.rowNumber ?? findRowNumberByKey(await getSheetRows(), data.rowKey, data.rowKeyIndex);
 
     if (!rowNumber) throw new Error("Task row not found in sheet");
 
@@ -141,7 +169,8 @@ export const updateTaskInSheet = createServerFn({ method: "POST" })
   });
 
 const strikethroughInput = z.object({
-  rowKey: z.string().min(1),
+  rowNumber: z.number().int().min(2).optional(),
+  rowKey: z.string().min(1).optional(),
   rowKeyIndex: z.number().int().nonnegative().default(0),
   strikethrough: z.boolean(),
 });
@@ -160,18 +189,7 @@ export const setRowStrikethroughInSheet = createServerFn({ method: "POST" })
     const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
     if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
 
-    const rows = await getSheetRows();
-    let seen = 0;
-    let rowNumber = 0;
-    for (let i = 0; i < rows.length; i++) {
-      if (taskKeyFromRow(rows[i]) === data.rowKey) {
-        if (seen === data.rowKeyIndex) {
-          rowNumber = i + 2;
-          break;
-        }
-        seen += 1;
-      }
-    }
+    const rowNumber = data.rowNumber ?? findRowNumberByKey(await getSheetRows(), data.rowKey, data.rowKeyIndex);
     if (!rowNumber) throw new Error("Task row not found in sheet");
 
     const sheetId = await getSheetIdByName(lovableKey, sheetsKey, SHEET_NAME);

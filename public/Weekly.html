@@ -237,6 +237,21 @@ function normStatus(s){
 }
 function effectiveStatus(r){ return r.done ? "Done" : normStatus(r.status); }
 function esc(v){ return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function formatOpenTimeMdd(value){
+  const raw = String(value ?? "").trim();
+  if(!raw) return "";
+  let m = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if(m) return String(Number(m[2])) + String(m[3]).padStart(2,"0");
+  m = raw.match(/^(\d{1,2})[-/](\d{1,2})(?:[-/]\d{2,4})?$/);
+  if(m) return String(Number(m[1])) + String(m[2]).padStart(2,"0");
+  const compact = raw.replace(/\D/g, "");
+  if(/^\d{8}$/.test(compact)) return String(Number(compact.slice(4,6))) + compact.slice(6,8);
+  if(/^\d{4}$/.test(compact)) return String(Number(compact.slice(0,2))) + compact.slice(2,4);
+  if(/^\d{3}$/.test(compact)) return compact;
+  const d = new Date(raw);
+  if(!Number.isNaN(d.getTime())) return String(d.getMonth()+1) + String(d.getDate()).padStart(2,"0");
+  return raw;
+}
 
 async function load(){
   document.getElementById("errorState").classList.add("hidden");
@@ -250,7 +265,8 @@ async function load(){
     const seenKeys = {};
     RAW = parsed.data.map((r, idx) => ({
       id: idx,
-      openTime: r["Open Time"] || "",
+      rowNumber: idx + 2,
+      openTime: formatOpenTimeMdd(r["Open Time"]),
       module: (r["Module"]||"").trim() || "—",
       question: r["Question"]||"",
       pic: (r["PIC"]||"").trim() || "—",
@@ -558,6 +574,7 @@ async function pushUpdate(row, field, value){
     const body = new URLSearchParams({
       action: "update",
       sheet: SHEET_NAME,
+      rowNumber: String(row.rowNumber || ""),
       rowKey: row.rowKey || taskKey(row),
       rowKeyIndex: String(row.rowKeyIndex || 0),
       field,
@@ -770,7 +787,7 @@ newTaskModal.querySelector("#newTaskForm").addEventListener("submit", async (e)=
   const payload = {
     action: "append",
     sheet: SHEET_NAME,
-    "Open Time": fd.get("openTime") || "",
+    "Open Time": formatOpenTimeMdd(fd.get("openTime")),
     "Module": fd.get("module") || "",
     "Question": fd.get("question") || "",
     "PIC": fd.get("pic") || "",

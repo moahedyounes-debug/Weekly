@@ -58,8 +58,12 @@ function doPost(e) {
   // Use display values so dates/numbers match the CSV-formatted values the dashboard sends.
   const data = lastRow > 1 ? sh.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues() : [];
 
+  const requestedRow = Number(p.rowNumber || 0);
+  if (requestedRow >= 2 && requestedRow <= lastRow) {
+    targetRow = requestedRow;
+  }
 
-  if (p.rowKey) {
+  if (!targetRow && p.rowKey) {
     const wantedIndex = Number(p.rowKeyIndex || 0);
     let seen = 0;
     for (let i = 0; i < data.length; i++) {

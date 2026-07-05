@@ -218,7 +218,7 @@ function Dashboard() {
   const saveField = async (task: DashboardTask, field: "Status" | "Remarks" | "Done? (✓)", value: string) => {
     setSyncStatus("saving");
     try {
-      await updateTask({ data: { rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, field, value } });
+      await updateTask({ data: { rowNumber: task.rowNumber, rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, field, value } });
       setSyncStatus("saved");
     } catch {
       setSyncStatus("error");
@@ -227,7 +227,7 @@ function Dashboard() {
 
   const applyStrike = async (task: DashboardTask, strike: boolean) => {
     try {
-      await setStrike({ data: { rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, strikethrough: strike } });
+      await setStrike({ data: { rowNumber: task.rowNumber, rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, strikethrough: strike } });
     } catch {
       setSyncStatus("error");
     }
