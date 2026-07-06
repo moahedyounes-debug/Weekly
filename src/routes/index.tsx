@@ -626,7 +626,29 @@ function Dashboard() {
                           <TableCell className={`max-w-xs ${t.done ? "line-through" : ""}`}>{t.question}</TableCell>
                           <TableCell>{t.pic}</TableCell>
                           <TableCell className="max-w-sm text-sm text-muted-foreground">{t.action}</TableCell>
+                          {(() => {
+                            const age = agingOf(t);
+                            const overdue = age !== null && age > SLA_DAYS && eff !== "Canceled";
+                            return (
+                              <TableCell>
+                                {age === null ? (
+                                  <span className="text-muted-foreground">—</span>
+                                ) : (
+                                  <Badge
+                                    className={
+                                      overdue
+                                        ? "bg-red-600 text-white hover:bg-red-600 animate-pulse"
+                                        : "bg-emerald-600 text-white hover:bg-emerald-600"
+                                    }
+                                  >
+                                    {age}d
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            );
+                          })()}
                           <TableCell>
+
                             <Select value={eff} onValueChange={(v) => setStatusFor(t, v)}>
                               <SelectTrigger
                                 className="h-8 w-32 border-0 font-medium text-white"
