@@ -611,12 +611,13 @@ function Dashboard() {
                               className="min-h-9 text-sm"
                             />
                           </TableCell>
+                          <TableCell>{t.country || "—"}</TableCell>
                           <TableCell>{t.sourceWeek}</TableCell>
                         </TableRow>
                       );
                     })}
                     {filtered.length === 0 && (
-                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
