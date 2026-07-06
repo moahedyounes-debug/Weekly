@@ -347,7 +347,7 @@ function Dashboard() {
             <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
             <MultiSelect options={["Done", "In process", "New", "Canceled"]} selected={status} onChange={setStatus} placeholder="All Status" />
             <MultiSelect options={weeks} selected={week} onChange={setWeek} placeholder="All Weeks" />
-            <MultiSelect options={countries} selected={country} onChange={setCountry} placeholder="All Countries" />
+            
             <MultiSelect options={months} selected={month} onChange={setMonth} placeholder="All Months" />
             <MultiSelect options={quarters} selected={quarter} onChange={setQuarter} placeholder="All Quarters" />
           </CardContent>
