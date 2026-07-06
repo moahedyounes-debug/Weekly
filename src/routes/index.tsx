@@ -155,6 +155,18 @@ function Dashboard() {
       const d = new Date(y, m - 1, day);
       return Number.isNaN(d.getTime()) ? null : d;
     }
+    if (digits.length === 4) {
+      const m = Number(digits.slice(0, 2)), day = Number(digits.slice(2, 4));
+      if (m < 1 || m > 12 || day < 1 || day > 31) return null;
+      const d = new Date(new Date().getFullYear(), m - 1, day);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    if (digits.length === 3) {
+      const m = Number(digits.slice(0, 1)), day = Number(digits.slice(1, 3));
+      if (m < 1 || m > 9 || day < 1 || day > 31) return null;
+      const d = new Date(new Date().getFullYear(), m - 1, day);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
     return null;
   };
   const agingOf = (t: SheetTask & { done?: boolean }): number | null => {
