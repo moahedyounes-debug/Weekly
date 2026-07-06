@@ -2,10 +2,39 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
-const RANGE = "Sheet1!A2:M";
+const RANGE = "Sheet1!A1:M";
+const HEADER_RANGE = "Sheet1!A1:M1";
 const SHEET_NAME = "Sheet1";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
 const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
+
+// Map a header label from the sheet to our canonical field key.
+const HEADER_ALIASES: Record<string, string> = {
+  "open time": "openTime", "date": "openTime",
+  "module": "module",
+  "question": "question", "issue": "question",
+  "pic": "pic", "owner": "pic",
+  "management action": "action", "action": "action",
+  "completion time": "completionTime", "completion date": "completionTime",
+  "status": "status",
+  "remarks": "remarks", "remark": "remarks",
+  "description": "description",
+  "new tasks": "newTasks", "new task": "newTasks",
+  "source week": "sourceWeek", "week": "sourceWeek",
+  "done? (✓)": "done", "done": "done", "done?": "done", "done (✓)": "done",
+  "country": "country",
+};
+
+function buildColumnMap(headerRow: string[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  headerRow.forEach((h, i) => {
+    const key = String(h ?? "").trim().toLowerCase();
+    const field = HEADER_ALIASES[key];
+    if (field && map[field] === undefined) map[field] = i;
+  });
+  return map;
+}
+
 
 export type SheetTask = {
   rowNumber: number;
@@ -58,16 +87,18 @@ function normalizeCell(value: unknown) {
   return normalized === "—" || normalized === "-" ? "" : normalized;
 }
 
-function taskKeyFromRow(row: string[]) {
-  return [formatOpenTimeMdd(row[0]), row[1], row[2], row[3], row[4], row[5], row[10]].map(normalizeCell).join("||");
+function taskKeyFromRow(row: string[], colMap: Record<string, number>) {
+  const g = (f: string) => row[colMap[f] ?? -1] ?? "";
+  return [formatOpenTimeMdd(g("openTime")), g("module"), g("question"), g("pic"), g("action"), g("completionTime"), g("sourceWeek")]
+    .map(normalizeCell).join("||");
 }
 
-function findRowNumberByKey(rows: string[][], rowKey?: string, rowKeyIndex = 0) {
+function findRowNumberByKey(rows: string[][], colMap: Record<string, number>, rowKey?: string, rowKeyIndex = 0) {
   if (!rowKey) return 0;
 
   let seen = 0;
   for (let i = 0; i < rows.length; i++) {
-    if (taskKeyFromRow(rows[i]) === rowKey) {
+    if (taskKeyFromRow(rows[i], colMap) === rowKey) {
       if (seen === rowKeyIndex) return i + 2;
       seen += 1;
     }
@@ -87,12 +118,12 @@ function columnLetter(index: number) {
   return letter;
 }
 
-async function getSheetRows() {
+async function fetchRange(range: string): Promise<string[][]> {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
   if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
 
-  const url = `${GATEWAY}/spreadsheets/${SHEET_ID}/values/${RANGE}`;
+  const url = `${GATEWAY}/spreadsheets/${SHEET_ID}/values/${range}`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${lovableKey}`,
@@ -107,35 +138,54 @@ async function getSheetRows() {
   return json.values ?? [];
 }
 
+async function getSheetData() {
+  const all = await fetchRange(RANGE);
+  const headerRow = all[0] ?? [];
+  const dataRows = all.slice(1);
+  const colMap = buildColumnMap(headerRow);
+  return { headerRow, dataRows, colMap };
+}
+
 export const fetchTasksFromSheet = createServerFn({ method: "GET" }).handler(
   async (): Promise<SheetTask[]> => {
     try {
-      const rows = await getSheetRows();
-      return rows
+      const { dataRows, colMap } = await getSheetData();
+      const get = (r: string[], f: string) => {
+        const idx = colMap[f];
+        if (idx === undefined) return null;
+        const v = r[idx];
+        return v && String(v).trim() !== "" ? v : null;
+      };
+      return dataRows
         .map((r, index) => ({ row: r, rowNumber: index + 2 }))
         .filter(({ row }) => row.some((c) => (c ?? "").trim() !== ""))
-        .map(({ row: r, rowNumber }) => ({
-          rowNumber,
-          openTime: formatOpenTimeMdd(r[0]),
-          module: r[1] || null,
-          question: r[2] || null,
-          pic: r[3] || null,
-          action: r[4] || null,
-          completionTime: r[5] || null,
-          status: r[6] || null,
-          remarks: r[7] || null,
-          description: r[8] || null,
-          newTasks: r[9] || null,
-          sourceWeek: r[10] || null,
-          done: (r[11] || "").toUpperCase() === "TRUE" || (r[6] || "").toLowerCase() === "done",
-          country: r[12] || null,
-        }));
+        .map(({ row: r, rowNumber }) => {
+          const status = get(r, "status");
+          const doneRaw = get(r, "done") ?? "";
+          return {
+            rowNumber,
+            openTime: formatOpenTimeMdd(get(r, "openTime")),
+            module: get(r, "module"),
+            question: get(r, "question"),
+            pic: get(r, "pic"),
+            action: get(r, "action"),
+            completionTime: get(r, "completionTime"),
+            status,
+            remarks: get(r, "remarks"),
+            description: get(r, "description"),
+            newTasks: get(r, "newTasks"),
+            sourceWeek: get(r, "sourceWeek"),
+            done: String(doneRaw).toUpperCase() === "TRUE" || String(status ?? "").toLowerCase() === "done",
+            country: get(r, "country"),
+          };
+        });
     } catch (error) {
       console.error("Unable to load Google Sheet rows; rendering empty dashboard fallback:", error);
       return [];
     }
   }
 );
+
 
 export const updateTaskInSheet = createServerFn({ method: "POST" })
   .inputValidator((data) => updateTaskInput.parse(data))
@@ -144,14 +194,16 @@ export const updateTaskInSheet = createServerFn({ method: "POST" })
     const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
     if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
 
-    const rowNumber = data.rowNumber ?? findRowNumberByKey(await getSheetRows(), data.rowKey, data.rowKeyIndex);
+    const { dataRows, colMap } = await getSheetData();
+    const rowNumber = data.rowNumber ?? findRowNumberByKey(dataRows, colMap, data.rowKey, data.rowKeyIndex);
 
     if (!rowNumber) throw new Error("Task row not found in sheet");
 
-    const colIndex = HEADERS.indexOf(data.field) + 1;
-    if (!colIndex) throw new Error(`Unknown field: ${data.field}`);
+    const fieldToKey: Record<string, string> = { "Status": "status", "Remarks": "remarks", "Done? (✓)": "done" };
+    const colIdx = colMap[fieldToKey[data.field]];
+    if (colIdx === undefined) throw new Error(`Unknown field: ${data.field}`);
 
-    const cellRange = `${SHEET_NAME}!${columnLetter(colIndex)}${rowNumber}`;
+    const cellRange = `${SHEET_NAME}!${columnLetter(colIdx + 1)}${rowNumber}`;
     const url = `${GATEWAY}/spreadsheets/${SHEET_ID}/values/${cellRange}?valueInputOption=USER_ENTERED`;
     const res = await fetch(url, {
       method: "PUT",
@@ -191,7 +243,8 @@ export const setRowStrikethroughInSheet = createServerFn({ method: "POST" })
     const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
     if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
 
-    const rowNumber = data.rowNumber ?? findRowNumberByKey(await getSheetRows(), data.rowKey, data.rowKeyIndex);
+    const { dataRows, colMap } = await getSheetData();
+    const rowNumber = data.rowNumber ?? findRowNumberByKey(dataRows, colMap, data.rowKey, data.rowKeyIndex);
     if (!rowNumber) throw new Error("Task row not found in sheet");
 
     const sheetId = await getSheetIdByName(lovableKey, sheetsKey, SHEET_NAME);
