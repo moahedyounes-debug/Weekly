@@ -341,12 +341,15 @@ function Dashboard() {
 
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6 grid gap-3 md:grid-cols-5">
-            <Input placeholder="Search task, action, remarks..." value={search} onChange={e => setSearch(e.target.value)} />
+          <CardContent className="pt-6 grid gap-3 md:grid-cols-4">
+            <Input placeholder="Search task, action, remarks, country..." value={search} onChange={e => setSearch(e.target.value)} />
             <MultiSelect options={pics} selected={pic} onChange={setPic} placeholder="All PICs" />
             <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
             <MultiSelect options={["Done", "In process", "New", "Canceled"]} selected={status} onChange={setStatus} placeholder="All Status" />
             <MultiSelect options={weeks} selected={week} onChange={setWeek} placeholder="All Weeks" />
+            <MultiSelect options={countries} selected={country} onChange={setCountry} placeholder="All Countries" />
+            <MultiSelect options={months} selected={month} onChange={setMonth} placeholder="All Months" />
+            <MultiSelect options={quarters} selected={quarter} onChange={setQuarter} placeholder="All Quarters" />
           </CardContent>
         </Card>
 
