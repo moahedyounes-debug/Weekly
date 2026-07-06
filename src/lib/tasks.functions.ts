@@ -21,6 +21,7 @@ export type SheetTask = {
   newTasks: string | null;
   sourceWeek: string | null;
   done: boolean;
+  country: string | null;
 };
 
 const updateTaskInput = z.object({
