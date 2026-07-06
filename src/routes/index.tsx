@@ -171,9 +171,13 @@ function Dashboard() {
   };
   const agingOf = (t: SheetTask & { done?: boolean }): number | null => {
     const start = parseDate(t.openTime);
-    if (!start) return null;
     const end = t.completionTime ? parseDate(t.completionTime) : null;
-    const to = end ?? new Date();
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line no-console
+      console.log("[aging]", { openTime: t.openTime, completionTime: t.completionTime, start, end });
+    }
+    if (!start) return null;
+    const to = end && end.getTime() >= start.getTime() ? end : new Date();
     const diff = Math.floor((to.getTime() - start.getTime()) / 86400000);
     return diff >= 0 ? diff : null;
   };
