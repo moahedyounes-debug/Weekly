@@ -10,12 +10,13 @@ const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", 
 
 // Map a header label from the sheet to our canonical field key.
 const HEADER_ALIASES: Record<string, string> = {
-  "open time": "openTime", "date": "openTime",
+  "open time": "openTime", "opening date": "openTime", "opening time": "openTime", "date": "openTime",
   "module": "module",
   "question": "question", "issue": "question",
   "pic": "pic", "owner": "pic",
   "management action": "action", "action": "action",
   "completion time": "completionTime", "completion date": "completionTime",
+  "dead line time": "deadline", "deadline time": "deadline", "dead line": "deadline", "deadline": "deadline", "due": "deadline",
   "status": "status",
   "remarks": "remarks", "remark": "remarks",
   "description": "description",
@@ -44,6 +45,7 @@ export type SheetTask = {
   pic: string | null;
   action: string | null;
   completionTime: string | null;
+  deadline: string | null;
   status: string | null;
   remarks: string | null;
   description: string | null;
@@ -170,6 +172,7 @@ export const fetchTasksFromSheet = createServerFn({ method: "GET" }).handler(
             pic: get(r, "pic"),
             action: get(r, "action"),
             completionTime: get(r, "completionTime"),
+            deadline: get(r, "deadline"),
             status,
             remarks: get(r, "remarks"),
             description: get(r, "description"),
