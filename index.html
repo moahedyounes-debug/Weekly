@@ -36,7 +36,10 @@
    th.sort-asc .sort-ind, th.sort-desc .sort-ind{opacity:1;color:#0f172a}
    .col-resizer{position:absolute;top:0;right:0;width:6px;height:100%;cursor:col-resize;user-select:none;z-index:5}
    .col-resizer:hover,.col-resizer.active{background:#94a3b8}
-  .badge{display:inline-block;padding:.15rem .55rem;border-radius:9999px;font-size:.72rem;font-weight:600}
+   .badge{display:inline-block;padding:.15rem .55rem;border-radius:9999px;font-size:.72rem;font-weight:600}
+   .aging-badge{display:inline-flex;align-items:center;justify-content:center;min-width:3rem;padding:.18rem .55rem;border-radius:9999px;font-size:.72rem;font-weight:700;background:#dcfce7;color:#166534}
+   .aging-badge.overdue{background:#dc2626;color:#fff;animation:pulse 1.2s ease-in-out infinite}
+   @keyframes pulse{50%{opacity:.72}}
   .badge-done{background:rgba(34,197,94,.12);color:#15803d}
   .badge-proc{background:rgba(245,158,11,.15);color:#b45309}
   .badge-new{background:rgba(59,130,246,.12);color:#1d4ed8}
@@ -180,7 +183,7 @@
         <div class="overflow-x-auto" style="max-height:640px">
           <table id="taskTable">
             <colgroup>
-              <col style="width:42px"><col style="width:80px"><col style="width:120px"><col style="width:280px"><col style="width:150px"><col style="width:240px"><col style="width:70px"><col style="width:110px">
+              <col style="width:42px"><col style="width:80px"><col style="width:120px"><col style="width:280px"><col style="width:150px"><col style="width:240px"><col style="width:70px"><col style="width:90px"><col style="width:110px">
             </colgroup>
             <thead><tr>
               <th></th>
@@ -190,6 +193,7 @@
               <th class="sortable" data-sort="status">Status<span class="sort-ind">↕</span></th>
               <th class="sortable" data-sort="remarks">Remarks<span class="sort-ind">↕</span></th>
               <th class="sortable" data-sort="week">Week<span class="sort-ind">↕</span></th>
+              <th class="sortable" data-sort="aging">Aging<span class="sort-ind">↕</span></th>
               <th class="sortable" data-sort="due">Due<span class="sort-ind">↕</span></th>
             </tr></thead>
             <tbody id="taskBody"></tbody>
@@ -542,11 +546,56 @@ function mkBadge(s, label){
   if(s==="Canceled") return '<span class="badge badge-cancel">'+text+'</span>';
   return '<span class="badge badge-new">'+text+'</span>';
 }
+
+const SLA_DAYS = 7;
+function todayOnly(){
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function validDate(y,m,d){
+  const out = new Date(y, m - 1, d);
+  return out.getFullYear()===y && out.getMonth()===m-1 && out.getDate()===d ? out : null;
+}
+function parseTaskDate(value){
+  const raw = String(value ?? "").trim();
+  if(!raw) return null;
+  let m = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if(m) return validDate(Number(m[1]), Number(m[2]), Number(m[3]));
+  m = raw.match(/^(\d{1,2})[-/](\d{1,2})(?:[-/](\d{2,4}))?$/);
+  if(m){
+    const y = m[3] ? Number(m[3].length===2 ? "20"+m[3] : m[3]) : new Date().getFullYear();
+    return validDate(y, Number(m[1]), Number(m[2]));
+  }
+  const digits = raw.replace(/\D/g, "");
+  if(/^\d{8}$/.test(digits)) return validDate(Number(digits.slice(0,4)), Number(digits.slice(4,6)), Number(digits.slice(6,8)));
+  if(/^\d{4}$/.test(digits)) return validDate(new Date().getFullYear(), Number(digits.slice(0,2)), Number(digits.slice(2,4)));
+  if(/^\d{3}$/.test(digits)) return validDate(new Date().getFullYear(), Number(digits.slice(0,1)), Number(digits.slice(1,3)));
+  return null;
+}
+function agingOf(r){
+  const start = parseTaskDate(r.openTime);
+  if(!start) return null;
+  const due = parseTaskDate(r.due);
+  const end = due && due >= start ? due : todayOnly();
+  const days = Math.floor((end - start) / 86400000);
+  return days >= 0 ? days : null;
+}
+function isOverdue(r, age){
+  const st = effectiveStatus(r);
+  if(st === "Done" || st === "Canceled") return false;
+  const due = parseTaskDate(r.due);
+  return due ? todayOnly() > due : age !== null && age > SLA_DAYS;
+}
+function mkAging(r){
+  const age = agingOf(r);
+  if(age === null) return '<span class="text-slate-400">—</span>';
+  return `<span class="aging-badge ${isOverdue(r, age) ? 'overdue' : ''}">${age}d</span>`;
+}
 let SORT = { key: null, dir: 1 };
 function applySort(arr){
   if(!SORT.key) return arr;
   const k = SORT.key, d = SORT.dir;
-  const get = r => k==="status" ? effectiveStatus(r) : (r[k] ?? "");
+  const get = r => k==="status" ? effectiveStatus(r) : k==="aging" ? (agingOf(r) ?? -1) : (r[k] ?? "");
   return [...arr].sort((a,b)=>{
     const av = get(a), bv = get(b);
     // numeric/date-aware compare
@@ -622,9 +671,10 @@ function renderTable(data){
       </select></td>
       <td><textarea class="remarks-input" data-remarks="${r.id}" rows="1">${esc(r.remarks)}</textarea></td>
       <td ${ed(r.id,"Source Week")}>${esc(r.week)}</td>
+      <td>${mkAging(r)}</td>
       <td ${ed(r.id,"Completion Time")}>${esc(r.due)}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="8" class="text-center text-slate-400 py-8">No tasks match the filters.</td></tr>`;
+  }).join("") || `<tr><td colspan="9" class="text-center text-slate-400 py-8">No tasks match the filters.</td></tr>`;
 
   tb.querySelectorAll("[data-toggle]").forEach(el=>el.addEventListener("change",()=>{
     const id=Number(el.dataset.toggle); const row=RAW.find(r=>r.id===id);
