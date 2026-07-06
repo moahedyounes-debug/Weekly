@@ -571,6 +571,7 @@ function Dashboard() {
                       <TableHead>Action</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Remarks</TableHead>
+                      <TableHead>Country</TableHead>
                       <TableHead>Week</TableHead>
                     </TableRow>
                   </TableHeader>
