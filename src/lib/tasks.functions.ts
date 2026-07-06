@@ -2,10 +2,39 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
-const RANGE = "Sheet1!A2:M";
+const RANGE = "Sheet1!A1:M";
+const HEADER_RANGE = "Sheet1!A1:M1";
 const SHEET_NAME = "Sheet1";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
 const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
+
+// Map a header label from the sheet to our canonical field key.
+const HEADER_ALIASES: Record<string, string> = {
+  "open time": "openTime", "date": "openTime",
+  "module": "module",
+  "question": "question", "issue": "question",
+  "pic": "pic", "owner": "pic",
+  "management action": "action", "action": "action",
+  "completion time": "completionTime", "completion date": "completionTime",
+  "status": "status",
+  "remarks": "remarks", "remark": "remarks",
+  "description": "description",
+  "new tasks": "newTasks", "new task": "newTasks",
+  "source week": "sourceWeek", "week": "sourceWeek",
+  "done? (✓)": "done", "done": "done", "done?": "done", "done (✓)": "done",
+  "country": "country",
+};
+
+function buildColumnMap(headerRow: string[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  headerRow.forEach((h, i) => {
+    const key = String(h ?? "").trim().toLowerCase();
+    const field = HEADER_ALIASES[key];
+    if (field && map[field] === undefined) map[field] = i;
+  });
+  return map;
+}
+
 
 export type SheetTask = {
   rowNumber: number;
