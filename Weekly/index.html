@@ -257,6 +257,14 @@ function formatOpenTimeMdd(value){
   return raw;
 }
 
+function firstValue(row, names){
+  for(const name of names){
+    const v = row[name];
+    if(v !== undefined && String(v).trim() !== "") return v;
+  }
+  return "";
+}
+
 async function load(){
   document.getElementById("errorState").classList.add("hidden");
   document.getElementById("loadingState").classList.remove("hidden");
@@ -270,12 +278,13 @@ async function load(){
     RAW = parsed.data.map((r, idx) => ({
       id: idx,
       rowNumber: idx + 2,
-      openTime: formatOpenTimeMdd(r["Open Time"]),
+      openTime: formatOpenTimeMdd(firstValue(r, ["Open Time", "Opening Date", "Opening Time", "Date"])),
       module: (r["Module"]||"").trim() || "—",
       question: r["Question"]||"",
       pic: (r["PIC"]||"").trim() || "—",
       action: r["Management Action"]||"",
-      due: r["Completion Time"]||"",
+      due: firstValue(r, ["Completion Time", "Completion Date"]),
+      deadline: firstValue(r, ["Dead Line time", "Deadline Time", "Dead Line", "Deadline", "Due"]),
       status: normStatus(r["Status"]),
       remarks: r["Remarks"]||"",
       description: r["Description"]||"",
@@ -575,16 +584,21 @@ function parseTaskDate(value){
 function agingOf(r){
   const start = parseTaskDate(r.openTime);
   if(!start) return null;
-  const due = parseTaskDate(r.due);
-  const end = due && due >= start ? due : todayOnly();
+  const st = effectiveStatus(r);
+  const close = st === "Done" || st === "Canceled" ? parseTaskDate(r.due) : null;
+  const end = close && close >= start ? close : todayOnly();
   const days = Math.floor((end - start) / 86400000);
   return days >= 0 ? days : null;
 }
 function isOverdue(r, age){
   const st = effectiveStatus(r);
-  if(st === "Done" || st === "Canceled") return false;
-  const due = parseTaskDate(r.due);
-  return due ? todayOnly() > due : age !== null && age > SLA_DAYS;
+  if(st === "Canceled") return false;
+  const deadline = parseTaskDate(r.deadline) || parseTaskDate(r.due);
+  if(deadline){
+    const actual = st === "Done" ? (parseTaskDate(r.due) || todayOnly()) : todayOnly();
+    return actual > deadline;
+  }
+  return age !== null && age > SLA_DAYS;
 }
 function mkAging(r){
   const age = agingOf(r);

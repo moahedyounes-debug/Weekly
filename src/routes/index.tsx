@@ -171,15 +171,22 @@ function Dashboard() {
   };
   const agingOf = (t: SheetTask & { done?: boolean }): number | null => {
     const start = parseDate(t.openTime);
-    const end = t.completionTime ? parseDate(t.completionTime) : null;
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
-      console.log("[aging]", { openTime: t.openTime, completionTime: t.completionTime, start, end });
-    }
     if (!start) return null;
+    const eff = normalizeStatus(t.status, Boolean(t.done));
+    const end = eff === "Done" || eff === "Canceled" ? parseDate(t.completionTime) : null;
     const to = end && end.getTime() >= start.getTime() ? end : new Date();
     const diff = Math.floor((to.getTime() - start.getTime()) / 86400000);
     return diff >= 0 ? diff : null;
+  };
+  const overdueOf = (t: SheetTask & { done?: boolean }, age: number | null) => {
+    const eff = normalizeStatus(t.status, Boolean(t.done));
+    if (eff === "Canceled") return false;
+    const deadline = parseDate(t.deadline) ?? parseDate(t.completionTime);
+    if (deadline) {
+      const actual = eff === "Done" ? parseDate(t.completionTime) ?? new Date() : new Date();
+      return actual.getTime() > deadline.getTime();
+    }
+    return age !== null && age > SLA_DAYS;
   };
 
 
@@ -644,7 +651,7 @@ function Dashboard() {
                           <TableCell className="max-w-sm text-sm text-muted-foreground">{t.action}</TableCell>
                           {(() => {
                             const age = agingOf(t);
-                            const overdue = age !== null && age > SLA_DAYS && eff !== "Canceled";
+                            const overdue = overdueOf(t, age);
                             return (
                               <TableCell>
                                 {age === null ? (
