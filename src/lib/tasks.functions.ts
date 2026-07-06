@@ -243,7 +243,8 @@ export const setRowStrikethroughInSheet = createServerFn({ method: "POST" })
     const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
     if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
 
-    const rowNumber = data.rowNumber ?? findRowNumberByKey(await getSheetRows(), data.rowKey, data.rowKeyIndex);
+    const { dataRows, colMap } = await getSheetData();
+    const rowNumber = data.rowNumber ?? findRowNumberByKey(dataRows, colMap, data.rowKey, data.rowKeyIndex);
     if (!rowNumber) throw new Error("Task row not found in sheet");
 
     const sheetId = await getSheetIdByName(lovableKey, sheetsKey, SHEET_NAME);
