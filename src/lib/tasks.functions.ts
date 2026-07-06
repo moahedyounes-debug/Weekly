@@ -194,14 +194,16 @@ export const updateTaskInSheet = createServerFn({ method: "POST" })
     const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
     if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
 
-    const rowNumber = data.rowNumber ?? findRowNumberByKey(await getSheetRows(), data.rowKey, data.rowKeyIndex);
+    const { dataRows, colMap } = await getSheetData();
+    const rowNumber = data.rowNumber ?? findRowNumberByKey(dataRows, colMap, data.rowKey, data.rowKeyIndex);
 
     if (!rowNumber) throw new Error("Task row not found in sheet");
 
-    const colIndex = HEADERS.indexOf(data.field) + 1;
-    if (!colIndex) throw new Error(`Unknown field: ${data.field}`);
+    const fieldToKey: Record<string, string> = { "Status": "status", "Remarks": "remarks", "Done? (✓)": "done" };
+    const colIdx = colMap[fieldToKey[data.field]];
+    if (colIdx === undefined) throw new Error(`Unknown field: ${data.field}`);
 
-    const cellRange = `${SHEET_NAME}!${columnLetter(colIndex)}${rowNumber}`;
+    const cellRange = `${SHEET_NAME}!${columnLetter(colIdx + 1)}${rowNumber}`;
     const url = `${GATEWAY}/spreadsheets/${SHEET_ID}/values/${cellRange}?valueInputOption=USER_ENTERED`;
     const res = await fetch(url, {
       method: "PUT",
