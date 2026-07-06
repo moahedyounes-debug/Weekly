@@ -128,6 +128,7 @@ export const fetchTasksFromSheet = createServerFn({ method: "GET" }).handler(
           newTasks: r[9] || null,
           sourceWeek: r[10] || null,
           done: (r[11] || "").toUpperCase() === "TRUE" || (r[6] || "").toLowerCase() === "done",
+          country: r[12] || null,
         }));
     } catch (error) {
       console.error("Unable to load Google Sheet rows; rendering empty dashboard fallback:", error);
