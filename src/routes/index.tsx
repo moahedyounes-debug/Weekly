@@ -678,7 +678,7 @@ function Dashboard() {
                       );
                     })}
                     {filtered.length === 0 && (
-                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
