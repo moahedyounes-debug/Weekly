@@ -216,12 +216,13 @@ function Dashboard() {
     if (status.length && !status.includes(eff)) return false;
     if (week.length && !week.includes(t.sourceWeek || "—")) return false;
     if (country.length && !country.includes(t.country || "")) return false;
-    const m = monthOf(t.completionTime);
+    const m = monthOf(t.openTime) ?? monthOf(t.completionTime);
     if (month.length && (!m || !month.includes(MONTH_NAMES[m - 1]))) return false;
     if (quarter.length) {
       const q = quarterOf(m);
       if (!q || !quarter.includes(q)) return false;
     }
+
     if (search) {
       const q = search.toLowerCase();
       const blob = `${t.question} ${t.action} ${t.remarks} ${t.description} ${t.pic} ${t.country}`.toLowerCase();
