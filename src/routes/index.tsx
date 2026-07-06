@@ -141,6 +141,32 @@ function Dashboard() {
   const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const quarterOf = (m: number | null): string | null => (m ? `Q${Math.ceil(m / 3)}` : null);
 
+  const SLA_DAYS = 7;
+  const parseDate = (v: string | null): Date | null => {
+    const s = String(v ?? "").trim();
+    if (!s) return null;
+    if (/[-/]/.test(s)) {
+      const d = new Date(s);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    const digits = s.replace(/\D/g, "");
+    if (digits.length === 8) {
+      const y = Number(digits.slice(0, 4)), m = Number(digits.slice(4, 6)), day = Number(digits.slice(6, 8));
+      const d = new Date(y, m - 1, day);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  };
+  const agingOf = (t: SheetTask & { done?: boolean }): number | null => {
+    const start = parseDate(t.openTime);
+    if (!start) return null;
+    const end = t.completionTime ? parseDate(t.completionTime) : null;
+    const to = end ?? new Date();
+    const diff = Math.floor((to.getTime() - start.getTime()) / 86400000);
+    return diff >= 0 ? diff : null;
+  };
+
+
   const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
   const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
   const countries = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.country).filter(Boolean))) as string[], [initial]);
