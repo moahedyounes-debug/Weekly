@@ -2,10 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
-const RANGE = "Sheet1!A2:L";
+const RANGE = "Sheet1!A2:M";
 const SHEET_NAME = "Sheet1";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
-const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)"] as const;
+const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
 
 export type SheetTask = {
   rowNumber: number;
@@ -21,6 +21,7 @@ export type SheetTask = {
   newTasks: string | null;
   sourceWeek: string | null;
   done: boolean;
+  country: string | null;
 };
 
 const updateTaskInput = z.object({
@@ -127,6 +128,7 @@ export const fetchTasksFromSheet = createServerFn({ method: "GET" }).handler(
           newTasks: r[9] || null,
           sourceWeek: r[10] || null,
           done: (r[11] || "").toUpperCase() === "TRUE" || (r[6] || "").toLowerCase() === "done",
+          country: r[12] || null,
         }));
     } catch (error) {
       console.error("Unable to load Google Sheet rows; rendering empty dashboard fallback:", error);

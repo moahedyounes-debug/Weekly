@@ -114,13 +114,41 @@ function Dashboard() {
   const [module, setModule] = useState<string[]>([]);
   const [status, setStatus] = useState<string[]>([]);
   const [week, setWeek] = useState<string[]>([]);
+  const [country, setCountry] = useState<string[]>([]);
+  const [month, setMonth] = useState<string[]>([]);
+  const [quarter, setQuarter] = useState<string[]>([]);
+
+  const monthOf = (openTime: string | null): number | null => {
+    const s = String(openTime ?? "").trim();
+    if (!s) return null;
+    const digits = s.replace(/\D/g, "");
+    if (!digits) return null;
+    // MDD format: 3 digits => 1st is month, 4 digits => first 1-2 digits are month
+    if (digits.length === 3) return Number(digits.slice(0, 1));
+    if (digits.length === 4) return Number(digits.slice(0, 2));
+    if (digits.length >= 5) return Number(digits.slice(0, digits.length - 2)) || null;
+    return null;
+  };
+  const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const quarterOf = (m: number | null): string | null => (m ? `Q${Math.ceil(m / 3)}` : null);
 
   const pics = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.pic).filter(Boolean))) as string[], [initial]);
   const modules = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.module).filter(Boolean))) as string[], [initial]);
+  const countries = useMemo(() => Array.from(new Set(initial.map((t: SheetTask) => t.country).filter(Boolean))) as string[], [initial]);
   const weeks = useMemo(
     () => Array.from(new Set(initial.map(t => t.sourceWeek || "—").filter(Boolean))).sort() as string[],
     [initial]
   );
+  const months = useMemo(() => {
+    const s = new Set<number>();
+    initial.forEach(t => { const m = monthOf(t.openTime); if (m) s.add(m); });
+    return Array.from(s).sort((a, b) => a - b).map(m => MONTH_NAMES[m - 1]);
+  }, [initial]);
+  const quarters = useMemo(() => {
+    const s = new Set<string>();
+    initial.forEach(t => { const q = quarterOf(monthOf(t.openTime)); if (q) s.add(q); });
+    return Array.from(s).sort();
+  }, [initial]);
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
@@ -128,13 +156,20 @@ function Dashboard() {
     if (module.length && !module.includes(t.module || "")) return false;
     if (status.length && !status.includes(eff)) return false;
     if (week.length && !week.includes(t.sourceWeek || "—")) return false;
+    if (country.length && !country.includes(t.country || "")) return false;
+    const m = monthOf(t.openTime);
+    if (month.length && (!m || !month.includes(MONTH_NAMES[m - 1]))) return false;
+    if (quarter.length) {
+      const q = quarterOf(m);
+      if (!q || !quarter.includes(q)) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
-      const blob = `${t.question} ${t.action} ${t.remarks} ${t.description} ${t.pic}`.toLowerCase();
+      const blob = `${t.question} ${t.action} ${t.remarks} ${t.description} ${t.pic} ${t.country}`.toLowerCase();
       if (!blob.includes(q)) return false;
     }
     return true;
-  }), [tasks, pic, module, status, week, search]);
+  }), [tasks, pic, module, status, week, country, month, quarter, search]);
 
 
   const stats = useMemo(() => {
@@ -306,12 +341,15 @@ function Dashboard() {
 
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6 grid gap-3 md:grid-cols-5">
-            <Input placeholder="Search task, action, remarks..." value={search} onChange={e => setSearch(e.target.value)} />
+          <CardContent className="pt-6 grid gap-3 md:grid-cols-4">
+            <Input placeholder="Search task, action, remarks, country..." value={search} onChange={e => setSearch(e.target.value)} />
             <MultiSelect options={pics} selected={pic} onChange={setPic} placeholder="All PICs" />
             <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
             <MultiSelect options={["Done", "In process", "New", "Canceled"]} selected={status} onChange={setStatus} placeholder="All Status" />
             <MultiSelect options={weeks} selected={week} onChange={setWeek} placeholder="All Weeks" />
+            <MultiSelect options={countries} selected={country} onChange={setCountry} placeholder="All Countries" />
+            <MultiSelect options={months} selected={month} onChange={setMonth} placeholder="All Months" />
+            <MultiSelect options={quarters} selected={quarter} onChange={setQuarter} placeholder="All Quarters" />
           </CardContent>
         </Card>
 
@@ -533,6 +571,7 @@ function Dashboard() {
                       <TableHead>Action</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Remarks</TableHead>
+                      <TableHead>Country</TableHead>
                       <TableHead>Week</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -572,12 +611,13 @@ function Dashboard() {
                               className="min-h-9 text-sm"
                             />
                           </TableCell>
+                          <TableCell>{t.country || "—"}</TableCell>
                           <TableCell>{t.sourceWeek}</TableCell>
                         </TableRow>
                       );
                     })}
                     {filtered.length === 0 && (
-                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
