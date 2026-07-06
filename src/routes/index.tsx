@@ -150,12 +150,12 @@ function Dashboard() {
   );
   const months = useMemo(() => {
     const s = new Set<number>();
-    initial.forEach(t => { const m = monthOf(t.openTime); if (m) s.add(m); });
+    initial.forEach(t => { const m = monthOf(t.completionTime); if (m) s.add(m); });
     return Array.from(s).sort((a, b) => a - b).map(m => MONTH_NAMES[m - 1]);
   }, [initial]);
   const quarters = useMemo(() => {
     const s = new Set<string>();
-    initial.forEach(t => { const q = quarterOf(monthOf(t.openTime)); if (q) s.add(q); });
+    initial.forEach(t => { const q = quarterOf(monthOf(t.completionTime)); if (q) s.add(q); });
     return Array.from(s).sort();
   }, [initial]);
 
@@ -166,7 +166,7 @@ function Dashboard() {
     if (status.length && !status.includes(eff)) return false;
     if (week.length && !week.includes(t.sourceWeek || "—")) return false;
     if (country.length && !country.includes(t.country || "")) return false;
-    const m = monthOf(t.openTime);
+    const m = monthOf(t.completionTime);
     if (month.length && (!m || !month.includes(MONTH_NAMES[m - 1]))) return false;
     if (quarter.length) {
       const q = quarterOf(m);
