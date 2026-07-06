@@ -121,13 +121,22 @@ function Dashboard() {
   const monthOf = (openTime: string | null): number | null => {
     const s = String(openTime ?? "").trim();
     if (!s) return null;
+    // Try full date first (e.g. "2025-10-05", "10/5/2025")
+    if (/[-/]/.test(s)) {
+      const d = new Date(s);
+      if (!Number.isNaN(d.getTime())) {
+        const m = d.getMonth() + 1;
+        if (m >= 1 && m <= 12) return m;
+      }
+    }
     const digits = s.replace(/\D/g, "");
     if (!digits) return null;
-    // MDD format: 3 digits => 1st is month, 4 digits => first 1-2 digits are month
-    if (digits.length === 3) return Number(digits.slice(0, 1));
-    if (digits.length === 4) return Number(digits.slice(0, 2));
-    if (digits.length >= 5) return Number(digits.slice(0, digits.length - 2)) || null;
-    return null;
+    // MDD format from formatOpenTimeMdd: month + zero-padded 2-digit day
+    let m: number | null = null;
+    if (digits.length === 3) m = Number(digits.slice(0, 1));
+    else if (digits.length === 4) m = Number(digits.slice(0, 2));
+    else if (digits.length === 8) m = Number(digits.slice(4, 6)); // YYYYMMDD
+    return m && m >= 1 && m <= 12 ? m : null;
   };
   const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const quarterOf = (m: number | null): string | null => (m ? `Q${Math.ceil(m / 3)}` : null);
