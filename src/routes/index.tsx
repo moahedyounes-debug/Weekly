@@ -197,16 +197,9 @@ function Dashboard() {
     () => Array.from(new Set(initial.map(t => t.sourceWeek || "—").filter(Boolean))).sort() as string[],
     [initial]
   );
-  const months = useMemo(() => {
-    const s = new Set<number>();
-    initial.forEach(t => { const m = monthOf(t.openTime) ?? monthOf(t.completionTime); if (m) s.add(m); });
-    return Array.from(s).sort((a, b) => a - b).map(m => MONTH_NAMES[m - 1]);
-  }, [initial]);
-  const quarters = useMemo(() => {
-    const s = new Set<string>();
-    initial.forEach(t => { const q = quarterOf(monthOf(t.openTime) ?? monthOf(t.completionTime)); if (q) s.add(q); });
-    return Array.from(s).sort();
-  }, [initial]);
+  const months = useMemo(() => MONTH_NAMES.slice(), []);
+  const quarters = useMemo(() => ["Q1", "Q2", "Q3", "Q4"], []);
+
 
 
   const filtered = useMemo(() => tasks.filter(t => {
@@ -401,18 +394,17 @@ function Dashboard() {
 
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6 grid gap-3 md:grid-cols-4">
+          <CardContent className="pt-6 grid gap-3 md:grid-cols-3 lg:grid-cols-4">
             <Input placeholder="Search task, action, remarks, country..." value={search} onChange={e => setSearch(e.target.value)} />
             <MultiSelect options={pics} selected={pic} onChange={setPic} placeholder="All PICs" />
             <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
             <MultiSelect options={["Done", "In process", "New", "Canceled"]} selected={status} onChange={setStatus} placeholder="All Status" />
             <MultiSelect options={weeks} selected={week} onChange={setWeek} placeholder="All Weeks" />
             <MultiSelect options={countries} selected={country} onChange={setCountry} placeholder="All Countries" />
-            
-            
             <MultiSelect options={months} selected={month} onChange={setMonth} placeholder="All Months" />
             <MultiSelect options={quarters} selected={quarter} onChange={setQuarter} placeholder="All Quarters" />
           </CardContent>
+
         </Card>
 
         <Tabs defaultValue="overview" className="space-y-4">
