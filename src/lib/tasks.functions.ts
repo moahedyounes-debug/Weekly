@@ -2,10 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
-const RANGE = "Sheet1!A2:L";
+const RANGE = "Sheet1!A2:M";
 const SHEET_NAME = "Sheet1";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
-const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)"] as const;
+const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
 
 export type SheetTask = {
   rowNumber: number;
