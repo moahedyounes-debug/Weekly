@@ -199,14 +199,15 @@ function Dashboard() {
   );
   const months = useMemo(() => {
     const s = new Set<number>();
-    initial.forEach(t => { const m = monthOf(t.completionTime); if (m) s.add(m); });
+    initial.forEach(t => { const m = monthOf(t.openTime) ?? monthOf(t.completionTime); if (m) s.add(m); });
     return Array.from(s).sort((a, b) => a - b).map(m => MONTH_NAMES[m - 1]);
   }, [initial]);
   const quarters = useMemo(() => {
     const s = new Set<string>();
-    initial.forEach(t => { const q = quarterOf(monthOf(t.completionTime)); if (q) s.add(q); });
+    initial.forEach(t => { const q = quarterOf(monthOf(t.openTime) ?? monthOf(t.completionTime)); if (q) s.add(q); });
     return Array.from(s).sort();
   }, [initial]);
+
 
   const filtered = useMemo(() => tasks.filter(t => {
     const eff = normalizeStatus(t.status, t.done);
