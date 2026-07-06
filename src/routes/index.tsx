@@ -166,7 +166,7 @@ function Dashboard() {
     if (status.length && !status.includes(eff)) return false;
     if (week.length && !week.includes(t.sourceWeek || "—")) return false;
     if (country.length && !country.includes(t.country || "")) return false;
-    const m = monthOf(t.openTime);
+    const m = monthOf(t.completionTime);
     if (month.length && (!m || !month.includes(MONTH_NAMES[m - 1]))) return false;
     if (quarter.length) {
       const q = quarterOf(m);
