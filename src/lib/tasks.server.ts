@@ -92,7 +92,7 @@ function buildColumnMap(headerRow: string[]): Record<string, number> {
   };
 
   for (const [field, index] of Object.entries(fallback)) {
-    if (map[field] === undefined) map[field] = index;
+    map[field] = index;
   }
 
   return map;
