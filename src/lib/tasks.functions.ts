@@ -54,3 +54,23 @@ export const setRowStrikethroughInSheet = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return setRowStrikethroughInSheetServer(data);
   });
+
+const appendTaskInput = z.object({
+  openTime: z.string().optional(),
+  country: z.string().optional(),
+  module: z.string().optional(),
+  question: z.string().optional(),
+  pic: z.string().optional(),
+  action: z.string().optional(),
+  deadline: z.string().optional(),
+  completionTime: z.string().optional(),
+  status: z.string().optional(),
+  remarks: z.string().optional(),
+  sourceWeek: z.string().optional(),
+});
+
+export const appendTaskToSheet = createServerFn({ method: "POST" })
+  .inputValidator((data) => appendTaskInput.parse(data))
+  .handler(async ({ data }) => {
+    return appendTaskToSheetServer(data);
+  });
