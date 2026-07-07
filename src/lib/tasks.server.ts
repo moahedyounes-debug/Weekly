@@ -2,7 +2,7 @@ const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
 const RANGE = "Sheet1!A1:N";
 const SHEET_NAME = "Sheet1";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
-const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Dead Line Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
+const HEADERS = ["Opening Date", "Country", "Module", "Question", "PIC", "Management Action", "Dead Line time", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)"] as const;
 
 const HEADER_ALIASES: Record<string, string> = {
   "open time": "openTime", "opening date": "openTime", "opening time": "openTime", "date": "openTime",
@@ -22,11 +22,11 @@ const HEADER_ALIASES: Record<string, string> = {
 };
 
 const FIELD_TO_COLUMN_INDEX: Record<EditableTaskField, number> = {
-  Status: 7,
-  Remarks: 8,
-  "Done? (✓)": 12,
-  Question: 2,
-  "Management Action": 4,
+  Status: 8,
+  Remarks: 9,
+  "Done? (✓)": 13,
+  Question: 3,
+  "Management Action": 5,
 };
 
 export type EditableTaskField = "Status" | "Remarks" | "Done? (✓)" | "Question" | "Management Action";
@@ -72,23 +72,22 @@ function buildColumnMap(headerRow: string[]): Record<string, number> {
     if (field && map[field] === undefined) map[field] = i;
   });
 
-  // The live sheet includes a Deadline column between Completion Time and Status.
-  // If a header is renamed/missing, keep the dashboard aligned with the known layout.
+  // Keep the dashboard aligned with the live sheet's physical A-N layout.
   const fallback: Record<string, number> = {
     openTime: 0,
-    module: 1,
-    question: 2,
-    pic: 3,
-    action: 4,
-    completionTime: 5,
+    country: 1,
+    module: 2,
+    question: 3,
+    pic: 4,
+    action: 5,
     deadline: 6,
-    status: 7,
-    remarks: 8,
-    description: 9,
-    newTasks: 10,
-    sourceWeek: 11,
-    done: 12,
-    country: 13,
+    completionTime: 7,
+    status: 8,
+    remarks: 9,
+    description: 10,
+    newTasks: 11,
+    sourceWeek: 12,
+    done: 13,
   };
 
   for (const [field, index] of Object.entries(fallback)) {
