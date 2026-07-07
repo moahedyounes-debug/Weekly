@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { fetchTasksFromSheet, updateTaskInSheet, setRowStrikethroughInSheet, type SheetTask } from "@/lib/tasks.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -115,6 +115,8 @@ function BuildBadge() {
 
 function Dashboard() {
   const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
+  const queryClient = useQueryClient();
+  const refreshTasks = useServerFn(fetchTasksFromSheet);
   const updateTask = useServerFn(updateTaskInSheet);
   const setStrike = useServerFn(setRowStrikethroughInSheet);
   const [tasks, setTasks] = useState<DashboardTask[]>(() => withRowKeys(initial));
@@ -384,6 +386,29 @@ function Dashboard() {
     void saveField({ ...task, action: value }, "Management Action", value);
   };
 
+  const handleSync = async () => {
+    setSyncStatus("saving");
+    setSearch("");
+    setPic([]);
+    setModule([]);
+    setStatus([]);
+    setWeek([]);
+    setCountry([]);
+    setMonth([]);
+    setQuarter([]);
+
+    try {
+      const freshTasks = await refreshTasks({ data: { forceRefresh: true } });
+      queryClient.setQueryData(tasksQueryOptions.queryKey, freshTasks);
+      setTasks(withRowKeys(freshTasks));
+      setSyncStatus("saved");
+    } catch (error) {
+      console.error("Sync Sheet failed:", error);
+      setSyncStatus("error");
+      void refetch();
+    }
+  };
+
   const picColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
 
   return (
@@ -397,7 +422,7 @@ function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            <Button variant="outline" onClick={handleSync} disabled={isFetching || syncStatus === "saving"}>
               <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Sync Sheet
             </Button>
             <Button asChild>

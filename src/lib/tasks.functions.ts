@@ -17,16 +17,22 @@ const updateTaskInput = z.object({
   value: z.string(),
 });
 
-export const fetchTasksFromSheet = createServerFn({ method: "POST" }).handler(
-  async (): Promise<SheetTask[]> => {
+const fetchTasksInput = z
+  .object({
+    forceRefresh: z.boolean().optional(),
+  })
+  .optional();
+
+export const fetchTasksFromSheet = createServerFn({ method: "POST" })
+  .inputValidator((data) => fetchTasksInput.parse(data))
+  .handler(async ({ data }): Promise<SheetTask[]> => {
     try {
-      return await fetchTasksFromSheetServer();
+      return await fetchTasksFromSheetServer({ forceRefresh: Boolean(data?.forceRefresh) });
     } catch (error) {
       console.error("Unable to load Google Sheet rows; rendering empty dashboard fallback:", error);
       return [];
     }
-  }
-);
+  });
 
 
 export const updateTaskInSheet = createServerFn({ method: "POST" })
