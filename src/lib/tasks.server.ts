@@ -210,7 +210,16 @@ export async function fetchTasksFromSheetServer(): Promise<SheetTask[]> {
     .filter(({ row }) => row.some((cell) => (cell ?? "").trim() !== ""))
     .map(({ row, rowNumber }) => {
       const status = get(row, "status");
-      const doneRaw = get(row, "done") ?? "";
+      let sourceWeek = get(row, "sourceWeek");
+      let doneRaw = get(row, "done") ?? "";
+      const looksBoolean = (value: string | null) => /^(true|false)$/i.test(String(value ?? "").trim());
+
+      // If headers are edited/shifted in the sheet, recover the known Wxx/TRUE/FALSE layout.
+      if (looksBoolean(sourceWeek) && !looksBoolean(doneRaw)) {
+        sourceWeek = row[11] || null;
+        doneRaw = row[12] || doneRaw;
+      }
+
       return {
         rowNumber,
         openTime: formatOpenTimeMdd(get(row, "openTime")),
@@ -224,7 +233,7 @@ export async function fetchTasksFromSheetServer(): Promise<SheetTask[]> {
         remarks: get(row, "remarks"),
         description: get(row, "description"),
         newTasks: get(row, "newTasks"),
-        sourceWeek: get(row, "sourceWeek"),
+        sourceWeek,
         done: String(doneRaw).toUpperCase() === "TRUE" || String(status ?? "").toLowerCase() === "done",
         country: get(row, "country"),
       };
