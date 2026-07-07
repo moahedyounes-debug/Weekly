@@ -379,6 +379,9 @@ function Dashboard() {
           </div>
         </header>
 
+        <BuildBadge />
+
+
         {/* KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <KpiCard icon={<ListTodo className="h-5 w-5" />} label="Total Tasks" value={stats.total} tone="muted" />
