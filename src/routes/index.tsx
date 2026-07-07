@@ -99,6 +99,20 @@ function withRowKeys(rows: SheetTask[]): DashboardTask[] {
   });
 }
 
+const BUILD_ID = (import.meta.env.VITE_BUILD_ID as string | undefined) ?? "dev";
+const BUILD_TIME = (import.meta.env.VITE_BUILD_TIME as string | undefined) ?? new Date().toISOString();
+
+function BuildBadge() {
+  const dt = new Date(BUILD_TIME);
+  const pretty = isNaN(dt.getTime()) ? BUILD_TIME : dt.toLocaleString();
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <Badge variant="outline" className="font-mono">build {BUILD_ID}</Badge>
+      <span>Last build: {pretty}</span>
+    </div>
+  );
+}
+
 function Dashboard() {
   const { data: initial, refetch, isFetching } = useSuspenseQuery(tasksQueryOptions);
   const updateTask = useServerFn(updateTaskInSheet);
