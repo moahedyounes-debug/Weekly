@@ -343,6 +343,18 @@ function Dashboard() {
     void saveField(task, "Remarks", value);
   };
 
+  const setQuestionFor = (task: DashboardTask, value: string) => {
+    if (value === (task.question || "")) return;
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, question: value } : t));
+    void saveField(task, "Question", value);
+  };
+
+  const setActionFor = (task: DashboardTask, value: string) => {
+    if (value === (task.action || "")) return;
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, action: value } : t));
+    void saveField(task, "Management Action", value);
+  };
+
   const picColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
 
   return (
@@ -640,9 +652,21 @@ function Dashboard() {
                             <Checkbox checked={t.done} onCheckedChange={() => toggleDone(t)} />
                           </TableCell>
                           <TableCell><Badge variant="outline">{t.module || "—"}</Badge></TableCell>
-                          <TableCell className={`max-w-xs ${t.done ? "line-through" : ""}`}>{t.question}</TableCell>
+                          <TableCell className="min-w-64 max-w-xs">
+                            <Textarea
+                              defaultValue={t.question || ""}
+                              onBlur={(e) => setQuestionFor(t, e.target.value)}
+                              className={`min-h-9 text-sm ${t.done ? "line-through" : ""}`}
+                            />
+                          </TableCell>
                           <TableCell>{t.pic}</TableCell>
-                          <TableCell className="max-w-sm text-sm text-muted-foreground">{t.action}</TableCell>
+                          <TableCell className="min-w-64 max-w-sm">
+                            <Textarea
+                              defaultValue={t.action || ""}
+                              onBlur={(e) => setActionFor(t, e.target.value)}
+                              className="min-h-9 text-sm text-muted-foreground"
+                            />
+                          </TableCell>
                           {(() => {
                             const age = agingOf(t);
                             const overdue = overdueOf(t, age);
