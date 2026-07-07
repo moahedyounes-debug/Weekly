@@ -662,7 +662,7 @@ async function pushUpdate(row, field, value){
     const body = new URLSearchParams({
       action: "update",
       sheet: SHEET_NAME,
-      rowNumber: String(row.rowNumber || ""),
+      rowNumber: "",
       rowKey: row.rowKey || taskKey(row),
       rowKeyIndex: String(row.rowKeyIndex || 0),
       field,
