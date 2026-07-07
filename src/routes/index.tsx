@@ -420,6 +420,30 @@ function Dashboard() {
     }
   };
 
+  const submitNewTask = async () => {
+    if (!newTask.question.trim()) return;
+    setSavingNew(true);
+    setSyncStatus("saving");
+    try {
+      await appendTask({ data: newTask });
+      const freshTasks = await refreshTasks({ data: { forceRefresh: true } });
+      queryClient.setQueryData(tasksQueryOptions.queryKey, freshTasks);
+      setTasks(withRowKeys(freshTasks));
+      setSyncStatus("saved");
+      setNewTaskOpen(false);
+      setNewTask({
+        openTime: "", country: "", module: "", question: "", pic: "",
+        action: "", deadline: "", completionTime: "", status: "New",
+        remarks: "", sourceWeek: "",
+      });
+    } catch (error) {
+      console.error("Add task failed:", error);
+      setSyncStatus("error");
+    } finally {
+      setSavingNew(false);
+    }
+  };
+
   const picColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
 
   return (
