@@ -4,6 +4,7 @@ import {
   fetchTasksFromSheetServer,
   setRowStrikethroughInSheetServer,
   updateTaskInSheetServer,
+  appendTaskToSheetServer,
   type SheetTask,
 } from "./tasks.server";
 
