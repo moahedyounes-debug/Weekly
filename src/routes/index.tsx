@@ -122,8 +122,16 @@ function Dashboard() {
   const refreshTasks = useServerFn(fetchTasksFromSheet);
   const updateTask = useServerFn(updateTaskInSheet);
   const setStrike = useServerFn(setRowStrikethroughInSheet);
+  const appendTask = useServerFn(appendTaskToSheet);
   const [tasks, setTasks] = useState<DashboardTask[]>(() => withRowKeys(initial));
   const [syncStatus, setSyncStatus] = useState<"saving" | "saved" | "error">("saved");
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [newTask, setNewTask] = useState({
+    openTime: "", country: "", module: "", question: "", pic: "",
+    action: "", deadline: "", completionTime: "", status: "New",
+    remarks: "", sourceWeek: "",
+  });
+  const [savingNew, setSavingNew] = useState(false);
   useEffect(() => {
     setTasks(withRowKeys(initial));
   }, [initial]);
