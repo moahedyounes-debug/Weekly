@@ -394,7 +394,7 @@ function Dashboard() {
 
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6 grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <CardContent className="pt-6 grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
             <Input placeholder="Search task, action, remarks, country..." value={search} onChange={e => setSearch(e.target.value)} />
             <MultiSelect options={pics} selected={pic} onChange={setPic} placeholder="All PICs" />
             <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
