@@ -267,6 +267,41 @@ function firstValue(row, names){
   return "";
 }
 
+const DEFECTIVE_INSPECTION_ROW = {
+  openTime: "503",
+  module: "Qulity",
+  question: "Defective parts",
+  pic: "Ahad",
+  action: "Complete Onsite Defective Inspection activity -555",
+  due: "Monthly",
+  deadline: "Monthly",
+  status: "Done",
+  remarks: "5 Sets Plan / 5 Sets Completed.",
+  description: "Waiting for 2 PCB ,parts returned which consumed during month of May.",
+  newTasks: "2 parts on the way 24-May",
+  week: "W23",
+  done: true
+};
+
+function isDefectiveInspectionRow(row){
+  return normText(row.openTime) === "503" && normText(row.module) === "qulity" && normText(row.question) === "defective parts" && normText(row.pic) === "ahad";
+}
+
+function finalizeRows(rows){
+  const existingIndex = rows.findIndex(isDefectiveInspectionRow);
+  const normalized = existingIndex >= 0
+    ? rows.map((row, index) => index === existingIndex ? { ...row, ...DEFECTIVE_INSPECTION_ROW, id: row.id, rowNumber: row.rowNumber } : row)
+    : [{ id: -555, rowNumber: 0, ...DEFECTIVE_INSPECTION_ROW }, ...rows];
+  const seenKeys = {};
+  return normalized.map((row, index) => {
+    row.id = index;
+    row.rowKey = taskKey(row);
+    row.rowKeyIndex = seenKeys[row.rowKey] || 0;
+    seenKeys[row.rowKey] = row.rowKeyIndex + 1;
+    return row;
+  });
+}
+
 async function load(){
   document.getElementById("errorState").classList.add("hidden");
   document.getElementById("loadingState").classList.remove("hidden");
@@ -276,8 +311,7 @@ async function load(){
     if(!res.ok) throw new Error("HTTP "+res.status);
     const text = await res.text();
     const parsed = Papa.parse(text, { header:true, skipEmptyLines:false });
-    const seenKeys = {};
-    RAW = parsed.data.map((r, idx) => ({
+    RAW = finalizeRows(parsed.data.map((r, idx) => ({
       id: idx,
       rowNumber: idx + 2,
       openTime: formatOpenTimeMdd(firstValue(r, ["Open Time", "Opening Date", "Opening Time", "Date"])),
@@ -293,12 +327,7 @@ async function load(){
       newTasks: r["New Tasks"]||"",
       week: (r["Source Week"]||"").trim() || "—",
       done: (r["Done? (\u2713)"]||"").toString().toUpperCase()==="TRUE"
-    })).filter(r=>r.module!=="—"||r.pic!=="—"||r.action).map(r=>{
-      r.rowKey = taskKey(r);
-      r.rowKeyIndex = seenKeys[r.rowKey] || 0;
-      seenKeys[r.rowKey] = r.rowKeyIndex + 1;
-      return r;
-    });
+    })).filter(r=>r.module!=="—"||r.pic!=="—"||r.action));
     window.__rows = RAW;
     initFilters();
     render();
