@@ -695,6 +695,9 @@ function Dashboard() {
                 <CardTitle>Task Tracker — set status inline</CardTitle>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => setStatus(["Canceled"])}>Canceled</Button>
+                  <Button size="sm" onClick={() => setNewTaskOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> New Task
+                  </Button>
                   <Badge
                     variant={syncStatus === "error" ? "destructive" : "secondary"}
                     className={
