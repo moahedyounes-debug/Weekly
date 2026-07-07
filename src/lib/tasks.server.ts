@@ -280,9 +280,9 @@ function rowsToTasks(dataRows: string[][], colMap: Record<string, number>): Shee
     });
 }
 
-export async function fetchTasksFromSheetServer(): Promise<SheetTask[]> {
+export async function fetchTasksFromSheetServer(options: { forceRefresh?: boolean } = {}): Promise<SheetTask[]> {
   const now = Date.now();
-  if (cachedTasks && now - cachedAt < SHEET_CACHE_MS) return cachedTasks;
+  if (!options.forceRefresh && cachedTasks && now - cachedAt < SHEET_CACHE_MS) return cachedTasks;
 
   try {
     const { dataRows, colMap } = await getSheetData();
@@ -336,6 +336,9 @@ export async function updateTaskInSheetServer(data: UpdateTaskInput) {
     updatedData?: { values?: string[][] };
   };
 
+  cachedTasks = null;
+  cachedAt = 0;
+
   return {
     ok: true,
     rowNumber,
@@ -373,6 +376,9 @@ export async function setRowStrikethroughInSheetServer(data: StrikethroughInput)
   });
 
   if (!res.ok) throw new Error(`Sheets format ${res.status}: ${await res.text()}`);
+
+  cachedTasks = null;
+  cachedAt = 0;
 
   return { ok: true, rowNumber, strikethrough: data.strikethrough };
 }
