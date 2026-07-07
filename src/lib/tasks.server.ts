@@ -227,7 +227,7 @@ export async function updateTaskInSheetServer(data: UpdateTaskInput) {
   if (colIdx === undefined) throw new Error(`Unknown field: ${data.field}`);
 
   const cellRange = `${SHEET_NAME}!${columnLetter(colIdx + 1)}${rowNumber}`;
-  const res = await fetch(`${GATEWAY}/spreadsheets/${SHEET_ID}/values/${cellRange}?valueInputOption=USER_ENTERED`, {
+  const res = await fetch(`${GATEWAY}/spreadsheets/${SHEET_ID}/values/${cellRange}?valueInputOption=USER_ENTERED&includeValuesInResponse=true`, {
     method: "PUT",
     headers: {
       ...connectorHeaders(),
@@ -241,7 +241,18 @@ export async function updateTaskInSheetServer(data: UpdateTaskInput) {
     throw new Error(`Sheets update ${res.status}: ${body}`);
   }
 
-  return { ok: true, rowNumber, field: data.field };
+  const json = (await res.json()) as {
+    updatedRange?: string;
+    updatedData?: { values?: string[][] };
+  };
+
+  return {
+    ok: true,
+    rowNumber,
+    field: data.field,
+    updatedRange: json.updatedRange ?? cellRange,
+    updatedValue: json.updatedData?.values?.[0]?.[0] ?? data.value,
+  };
 }
 
 export async function setRowStrikethroughInSheetServer(data: StrikethroughInput) {
