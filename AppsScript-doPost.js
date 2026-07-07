@@ -12,6 +12,22 @@ function doPost(e) {
     .trim()
     .replace(/^—$|^-$/g, "");
 
+  const formatOpenTimeMdd = value => {
+    const raw = String(value == null ? "" : value).trim();
+    if (!raw) return "";
+    let m = raw.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    if (m) return String(Number(m[2])) + String(m[3]).padStart(2, "0");
+    m = raw.match(/^(\d{1,2})[-\/](\d{1,2})(?:[-\/]\d{2,4})?$/);
+    if (m) return String(Number(m[1])) + String(m[2]).padStart(2, "0");
+    const compact = raw.replace(/\D/g, "");
+    if (/^\d{8}$/.test(compact)) return String(Number(compact.slice(4, 6))) + compact.slice(6, 8);
+    if (/^\d{4}$/.test(compact)) return String(Number(compact.slice(0, 2))) + compact.slice(2, 4);
+    if (/^\d{3}$/.test(compact)) return compact;
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) return String(d.getMonth() + 1) + String(d.getDate()).padStart(2, "0");
+    return raw;
+  };
+
   const findCol = name => {
     const target = norm(name).replace(/[^a-z0-9 ]/g, "");
     for (let i = 0; i < headers.length; i++) {
@@ -27,14 +43,14 @@ function doPost(e) {
   };
 
   const makeKey = rowValues => [
-    valueByHeader(rowValues, "Open Time"),
-    valueByHeader(rowValues, "Module"),
-    valueByHeader(rowValues, "Question"),
-    valueByHeader(rowValues, "PIC"),
-    valueByHeader(rowValues, "Management Action"),
-    valueByHeader(rowValues, "Completion Time"),
-    valueByHeader(rowValues, "Source Week")
-  ].map(norm).join("||");
+    norm(formatOpenTimeMdd(valueByHeader(rowValues, "Open Time"))),
+    norm(valueByHeader(rowValues, "Module")),
+    norm(valueByHeader(rowValues, "Question")),
+    norm(valueByHeader(rowValues, "PIC")),
+    norm(valueByHeader(rowValues, "Management Action")),
+    norm(valueByHeader(rowValues, "Completion Time")),
+    norm(valueByHeader(rowValues, "Source Week"))
+  ].join("||");
 
   if (p.action === "append") {
     const newRow = headers.map(header => {
