@@ -825,6 +825,42 @@ function Dashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={newTaskOpen} onOpenChange={setNewTaskOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Add New Task</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><Label>Open Time</Label><Input value={newTask.openTime} onChange={e => setNewTask(v => ({ ...v, openTime: e.target.value }))} placeholder="e.g. 707" /></div>
+            <div><Label>Country</Label><Input value={newTask.country} onChange={e => setNewTask(v => ({ ...v, country: e.target.value }))} placeholder="e.g. KSA" /></div>
+            <div><Label>Module</Label><Input value={newTask.module} onChange={e => setNewTask(v => ({ ...v, module: e.target.value }))} placeholder="e.g. SP, IT, SN" /></div>
+            <div><Label>PIC</Label><Input value={newTask.pic} onChange={e => setNewTask(v => ({ ...v, pic: e.target.value }))} /></div>
+            <div className="sm:col-span-2"><Label>Question / Task</Label><Textarea value={newTask.question} onChange={e => setNewTask(v => ({ ...v, question: e.target.value }))} rows={2} /></div>
+            <div className="sm:col-span-2"><Label>Management Action</Label><Textarea value={newTask.action} onChange={e => setNewTask(v => ({ ...v, action: e.target.value }))} rows={2} /></div>
+            <div><Label>Deadline</Label><Input value={newTask.deadline} onChange={e => setNewTask(v => ({ ...v, deadline: e.target.value }))} placeholder="e.g. 2026-07-30 or Monthly" /></div>
+            <div><Label>Completion Time</Label><Input value={newTask.completionTime} onChange={e => setNewTask(v => ({ ...v, completionTime: e.target.value }))} /></div>
+            <div>
+              <Label>Status</Label>
+              <Select value={newTask.status} onValueChange={v => setNewTask(s => ({ ...s, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="In process">In process</SelectItem>
+                  <SelectItem value="Done">Done</SelectItem>
+                  <SelectItem value="Canceled">Canceled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Source Week</Label><Input value={newTask.sourceWeek} onChange={e => setNewTask(v => ({ ...v, sourceWeek: e.target.value }))} placeholder="e.g. W23" /></div>
+            <div className="sm:col-span-2"><Label>Remarks</Label><Textarea value={newTask.remarks} onChange={e => setNewTask(v => ({ ...v, remarks: e.target.value }))} rows={2} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewTaskOpen(false)} disabled={savingNew}>Cancel</Button>
+            <Button onClick={submitNewTask} disabled={savingNew || !newTask.question.trim()}>
+              {savingNew ? "Saving…" : "Save Task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
