@@ -78,43 +78,49 @@
     "sourceWeek": "W23"
   },
   {
-    "openTime": "0607",
+    "openTime": "503",
     "module": "Qulity",
     "question": "FG Inspection",
     "pic": "Ahad",
     "action": "Complete Onsite FG Inspection activity",
     "completionTime": "Monthly",
-    "status": "In process",
-    "remarks": "0 sets / plan 5 sets",
-    "description": "will be inspect after New shipment will  recieved on 12th june",
+    "status": "Done",
+    "remarks": "5 Sets Plan / 5 Sets Completed.",
+    "description": "FG has been inpected in Jeddah warehouse on 17th June 2026.",
     "newTasks": null,
-    "sourceWeek": "W23"
+    "sourceWeek": "W23",
+    "done": true,
+    "country": "KSA"
   },
   {
-    "openTime": "0607",
+    "openTime": "503",
     "module": "Qulity",
     "question": "Installation",
     "pic": "Ahad",
     "action": "Complete Onsite Installation Inspection activity",
     "completionTime": "Monthly",
-    "status": "In process",
-    "remarks": "0 units / plan 10 units",
-    "description": "Installation will be follow up after sales team confirmation.",
+    "status": "Done",
+    "remarks": "Plan 10 / Completed 06.",
+    "description": "On site Installation Inspection has been done.",
     "newTasks": null,
-    "sourceWeek": "W23"
+    "sourceWeek": "W23",
+    "done": true,
+    "country": "KSA"
   },
   {
-    "openTime": "0531",
+    "openTime": "503",
     "module": "Qulity",
     "question": "Defective parts",
     "pic": "Ahad",
-    "action": "Complete Defected Parts Report",
+    "action": "Complete Onsite Defective Inspection activity -555",
     "completionTime": "Monthly",
     "status": "Done",
-    "remarks": "24 reported / 28 received",
+    "remarks": "5 Sets Plan / 5 Sets Completed.",
     "description": "Waiting for 2 PCB ,parts returned which consumed during month of May.",
     "newTasks": "2 parts on the way 24-May",
-    "sourceWeek": "W23"
+    "sourceWeek": "W23",
+    "done": true,
+    "country": "KSA"
   },
   {
     "openTime": "0419",
