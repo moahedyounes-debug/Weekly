@@ -1,0 +1,320 @@
+const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
+const RANGE = "Sheet1!A1:N";
+const SHEET_NAME = "Sheet1";
+const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
+const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Dead Line Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
+
+const HEADER_ALIASES: Record<string, string> = {
+  "open time": "openTime", "opening date": "openTime", "opening time": "openTime", "date": "openTime",
+  "module": "module",
+  "question": "question", "issue": "question",
+  "pic": "pic", "owner": "pic",
+  "management action": "action", "action": "action",
+  "completion time": "completionTime", "completion date": "completionTime",
+  "dead line time": "deadline", "deadline time": "deadline", "dead line": "deadline", "deadline": "deadline", "due": "deadline",
+  "status": "status",
+  "remarks": "remarks", "remark": "remarks",
+  "description": "description",
+  "new tasks": "newTasks", "new task": "newTasks",
+  "source week": "sourceWeek", "week": "sourceWeek",
+  "done? (✓)": "done", "done": "done", "done?": "done", "done (✓)": "done",
+  "country": "country",
+};
+
+const FIELD_TO_COLUMN_INDEX: Record<EditableTaskField, number> = {
+  Status: 7,
+  Remarks: 8,
+  "Done? (✓)": 12,
+  Question: 2,
+  "Management Action": 4,
+};
+
+export type EditableTaskField = "Status" | "Remarks" | "Done? (✓)" | "Question" | "Management Action";
+
+export type SheetTask = {
+  rowNumber: number;
+  openTime: string | null;
+  module: string | null;
+  question: string | null;
+  pic: string | null;
+  action: string | null;
+  completionTime: string | null;
+  deadline: string | null;
+  status: string | null;
+  remarks: string | null;
+  description: string | null;
+  newTasks: string | null;
+  sourceWeek: string | null;
+  done: boolean;
+  country: string | null;
+};
+
+export type UpdateTaskInput = {
+  rowNumber?: number;
+  rowKey?: string;
+  rowKeyIndex?: number;
+  field: EditableTaskField;
+  value: string;
+};
+
+export type StrikethroughInput = {
+  rowNumber?: number;
+  rowKey?: string;
+  rowKeyIndex?: number;
+  strikethrough: boolean;
+};
+
+function buildColumnMap(headerRow: string[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  headerRow.forEach((h, i) => {
+    const key = String(h ?? "").trim().toLowerCase();
+    const field = HEADER_ALIASES[key];
+    if (field && map[field] === undefined) map[field] = i;
+  });
+
+  // The live sheet includes a Deadline column between Completion Time and Status.
+  // If a header is renamed/missing, keep the dashboard aligned with the known layout.
+  const fallback: Record<string, number> = {
+    openTime: 0,
+    module: 1,
+    question: 2,
+    pic: 3,
+    action: 4,
+    completionTime: 5,
+    deadline: 6,
+    status: 7,
+    remarks: 8,
+    description: 9,
+    newTasks: 10,
+    sourceWeek: 11,
+    done: 12,
+    country: 13,
+  };
+
+  for (const [field, index] of Object.entries(fallback)) {
+    map[field] = index;
+  }
+
+  return map;
+}
+
+function formatOpenTimeMdd(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+
+  const iso = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (iso) return `${Number(iso[2])}${iso[3].padStart(2, "0")}`;
+
+  const slash = raw.match(/^(\d{1,2})[-/](\d{1,2})(?:[-/]\d{2,4})?$/);
+  if (slash) return `${Number(slash[1])}${slash[2].padStart(2, "0")}`;
+
+  const compact = raw.replace(/\D/g, "");
+  if (/^\d{8}$/.test(compact)) return `${Number(compact.slice(4, 6))}${compact.slice(6, 8)}`;
+  if (/^\d{4}$/.test(compact)) return `${Number(compact.slice(0, 2))}${compact.slice(2, 4)}`;
+  if (/^\d{3}$/.test(compact)) return compact;
+
+  const date = new Date(raw);
+  if (!Number.isNaN(date.getTime())) return `${date.getMonth() + 1}${String(date.getDate()).padStart(2, "0")}`;
+
+  return raw;
+}
+
+function normalizeCell(value: unknown) {
+  const normalized = String(value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  return normalized === "—" || normalized === "-" ? "" : normalized;
+}
+
+function taskKeyFromRow(row: string[], colMap: Record<string, number>) {
+  const get = (field: string) => row[colMap[field] ?? -1] ?? "";
+  return [formatOpenTimeMdd(get("openTime")), get("module"), get("question"), get("pic"), get("action"), get("completionTime"), get("sourceWeek")]
+    .map(normalizeCell)
+    .join("||");
+}
+
+function findRowNumberByKey(rows: string[][], colMap: Record<string, number>, rowKey?: string, rowKeyIndex = 0) {
+  if (!rowKey) return 0;
+
+  let seen = 0;
+  for (let i = 0; i < rows.length; i += 1) {
+    if (taskKeyFromRow(rows[i], colMap) === rowKey) {
+      if (seen === rowKeyIndex) return i + 2;
+      seen += 1;
+    }
+  }
+
+  return 0;
+}
+
+function columnLetter(index: number) {
+  let letter = "";
+  let n = index;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
+}
+
+function connectorHeaders() {
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  const sheetsKey = process.env.GOOGLE_SHEETS_API_KEY;
+  if (!lovableKey || !sheetsKey) throw new Error("Missing connector secrets");
+
+  return {
+    Authorization: `Bearer ${lovableKey}`,
+    "X-Connection-Api-Key": sheetsKey,
+  };
+}
+
+async function fetchRange(range: string): Promise<string[][]> {
+  const res = await fetch(`${GATEWAY}/spreadsheets/${SHEET_ID}/values/${range}`, {
+    headers: connectorHeaders(),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Sheets gateway ${res.status}: ${body}`);
+  }
+  const json = (await res.json()) as { values?: string[][] };
+  return json.values ?? [];
+}
+
+async function getSheetData() {
+  const all = await fetchRange(RANGE);
+  const headerRow = all[0] ?? [];
+  const dataRows = all.slice(1);
+  const colMap = buildColumnMap(headerRow);
+  return { dataRows, colMap };
+}
+
+async function resolveRowNumber(rowNumber?: number, rowKey?: string, rowKeyIndex = 0) {
+  if (rowNumber) return rowNumber;
+
+  const { dataRows, colMap } = await getSheetData();
+  const resolved = findRowNumberByKey(dataRows, colMap, rowKey, rowKeyIndex);
+  if (!resolved) throw new Error("Task row not found in sheet");
+  return resolved;
+}
+
+export async function fetchTasksFromSheetServer(): Promise<SheetTask[]> {
+  const { dataRows, colMap } = await getSheetData();
+  const get = (row: string[], field: string) => {
+    const idx = colMap[field];
+    if (idx === undefined) return null;
+    const value = row[idx];
+    return value && String(value).trim() !== "" ? value : null;
+  };
+
+  return dataRows
+    .map((row, index) => ({ row, rowNumber: index + 2 }))
+    .filter(({ row }) => row.some((cell) => (cell ?? "").trim() !== ""))
+    .map(({ row, rowNumber }) => {
+      const status = get(row, "status");
+      let sourceWeek = get(row, "sourceWeek");
+      let doneRaw = get(row, "done") ?? "";
+      const looksBoolean = (value: string | null) => /^(true|false)$/i.test(String(value ?? "").trim());
+
+      // If headers are edited/shifted in the sheet, recover the known Wxx/TRUE/FALSE layout.
+      if (looksBoolean(sourceWeek) && !looksBoolean(doneRaw)) {
+        sourceWeek = row[11] || null;
+        doneRaw = row[12] || doneRaw;
+      }
+
+      return {
+        rowNumber,
+        openTime: formatOpenTimeMdd(get(row, "openTime")),
+        module: get(row, "module"),
+        question: get(row, "question"),
+        pic: get(row, "pic"),
+        action: get(row, "action"),
+        completionTime: get(row, "completionTime"),
+        deadline: get(row, "deadline"),
+        status,
+        remarks: get(row, "remarks"),
+        description: get(row, "description"),
+        newTasks: get(row, "newTasks"),
+        sourceWeek,
+        done: String(doneRaw).toUpperCase() === "TRUE" || String(status ?? "").toLowerCase() === "done",
+        country: get(row, "country"),
+      };
+    });
+}
+
+export async function updateTaskInSheetServer(data: UpdateTaskInput) {
+  const rowNumber = await resolveRowNumber(data.rowNumber, data.rowKey, data.rowKeyIndex);
+  let colIdx = FIELD_TO_COLUMN_INDEX[data.field];
+
+  if (colIdx === undefined) {
+    const { colMap } = await getSheetData();
+    const fieldToKey: Record<EditableTaskField, string> = {
+      Status: "status",
+      Remarks: "remarks",
+      "Done? (✓)": "done",
+      Question: "question",
+      "Management Action": "action",
+    };
+    colIdx = colMap[fieldToKey[data.field]];
+  }
+
+  if (colIdx === undefined) throw new Error(`Unknown field: ${data.field}`);
+
+  const cellRange = `${SHEET_NAME}!${columnLetter(colIdx + 1)}${rowNumber}`;
+  const res = await fetch(`${GATEWAY}/spreadsheets/${SHEET_ID}/values/${cellRange}?valueInputOption=USER_ENTERED&includeValuesInResponse=true`, {
+    method: "PUT",
+    headers: {
+      ...connectorHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ range: cellRange, majorDimension: "ROWS", values: [[data.value]] }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Sheets update ${res.status}: ${body}`);
+  }
+
+  const json = (await res.json()) as {
+    updatedRange?: string;
+    updatedData?: { values?: string[][] };
+  };
+
+  return {
+    ok: true,
+    rowNumber,
+    field: data.field,
+    updatedRange: json.updatedRange ?? cellRange,
+    updatedValue: json.updatedData?.values?.[0]?.[0] ?? data.value,
+  };
+}
+
+export async function setRowStrikethroughInSheetServer(data: StrikethroughInput) {
+  const rowNumber = await resolveRowNumber(data.rowNumber, data.rowKey, data.rowKeyIndex);
+  const res = await fetch(`${GATEWAY}/spreadsheets/${SHEET_ID}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      ...connectorHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          repeatCell: {
+            range: {
+              sheetId: 0,
+              startRowIndex: rowNumber - 1,
+              endRowIndex: rowNumber,
+              startColumnIndex: 0,
+              endColumnIndex: HEADERS.length,
+            },
+            cell: { userEnteredFormat: { textFormat: { strikethrough: data.strikethrough } } },
+            fields: "userEnteredFormat.textFormat.strikethrough",
+          },
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Sheets format ${res.status}: ${await res.text()}`);
+
+  return { ok: true, rowNumber, strikethrough: data.strikethrough };
+}
