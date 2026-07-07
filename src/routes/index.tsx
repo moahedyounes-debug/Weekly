@@ -387,12 +387,12 @@ function Dashboard() {
 
   const setQuestionFor = (task: DashboardTask, value: string) => {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, question: value } : t));
-    void saveField({ ...task, question: value }, "Question", value);
+    void saveField(task, "Question", value);
   };
 
   const setActionFor = (task: DashboardTask, value: string) => {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, action: value } : t));
-    void saveField({ ...task, action: value }, "Management Action", value);
+    void saveField(task, "Management Action", value);
   };
 
   const handleSync = async () => {
