@@ -303,7 +303,7 @@ function Dashboard() {
     });
   }, [filtered, weeks, pics]);
 
-  const saveField = async (task: DashboardTask, field: "Status" | "Remarks" | "Done? (✓)", value: string) => {
+  const saveField = async (task: DashboardTask, field: "Status" | "Remarks" | "Done? (✓)" | "Question" | "Management Action", value: string) => {
     setSyncStatus("saving");
     try {
       await updateTask({ data: { rowNumber: task.rowNumber, rowKey: task.rowKey, rowKeyIndex: task.rowKeyIndex, field, value } });
