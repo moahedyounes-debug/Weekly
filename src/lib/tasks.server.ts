@@ -433,3 +433,44 @@ export async function setRowStrikethroughInSheetServer(data: StrikethroughInput)
 
   return { ok: true, rowNumber, strikethrough: data.strikethrough };
 }
+
+export async function appendTaskToSheetServer(data: AppendTaskInput) {
+  const status = (data.status ?? "New").trim();
+  const done = status.toLowerCase() === "done";
+  // Column order must match HEADERS (A..N).
+  const row = [
+    data.openTime ?? "",
+    data.country ?? "",
+    data.module ?? "",
+    data.question ?? "",
+    data.pic ?? "",
+    data.action ?? "",
+    data.deadline ?? "",
+    data.completionTime ?? "",
+    status,
+    data.remarks ?? "",
+    "", // description
+    "", // newTasks
+    data.sourceWeek ?? "",
+    done ? "TRUE" : "FALSE",
+  ];
+
+  const res = await fetch(
+    `${GATEWAY}/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    {
+      method: "POST",
+      headers: { ...connectorHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ range: `${SHEET_NAME}!A1`, majorDimension: "ROWS", values: [row] }),
+    },
+  );
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Sheets append ${res.status}: ${body}`);
+  }
+
+  cachedTasks = null;
+  cachedAt = 0;
+
+  return { ok: true };
+}
