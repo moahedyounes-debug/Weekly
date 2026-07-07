@@ -131,12 +131,14 @@
       </div>
 
       <!-- Filters -->
-      <div class="card p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-        <input id="fSearch" placeholder="Search task, action, remarks…" />
+      <div class="card p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+        <input id="fSearch" class="sm:col-span-2 md:col-span-4 xl:col-span-1" placeholder="Search task, action, remarks…" />
         <div class="ms" data-ms="pic"><button type="button" class="ms-btn"><span class="ms-label placeholder">All PICs</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
         <div class="ms" data-ms="mod"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Modules</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
         <div class="ms" data-ms="stat"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Status</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
         <div class="ms" data-ms="week"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Weeks</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
+        <div class="ms" data-ms="month"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Months</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
+        <div class="ms" data-ms="quarter"><button type="button" class="ms-btn"><span class="ms-label placeholder">All Quarters</span><span class="ms-caret">▾</span></button><div class="ms-panel"></div></div>
       </div>
 
       <!-- Tabs -->
@@ -312,8 +314,26 @@ async function load(){
 }
 
 function uniq(arr){ return [...new Set(arr.filter(Boolean))].sort(); }
-const FILTER = { pic:[], mod:[], stat:[], week:[] };
-const MS_PLACEHOLDERS = { pic:"All PICs", mod:"All Modules", stat:"All Status", week:"All Weeks" };
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const QUARTERS = ["Q1","Q2","Q3","Q4"];
+const FILTER = { pic:[], mod:[], stat:[], week:[], month:[], quarter:[] };
+const MS_PLACEHOLDERS = { pic:"All PICs", mod:"All Modules", stat:"All Status", week:"All Weeks", month:"All Months", quarter:"All Quarters" };
+
+function monthOf(value){
+  const raw = String(value ?? "").trim();
+  if(!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  let m = null;
+  if(/^\d{3}$/.test(digits)) m = Number(digits.slice(0,1));
+  else if(/^\d{4}$/.test(digits)) m = Number(digits.slice(0,2));
+  else if(/^\d{8}$/.test(digits)) m = Number(digits.slice(4,6));
+  else {
+    const d = new Date(raw);
+    if(!Number.isNaN(d.getTime())) m = d.getMonth() + 1;
+  }
+  return m && m >= 1 && m <= 12 ? m : null;
+}
+function quarterOf(month){ return month ? `Q${Math.ceil(month / 3)}` : null; }
 
 function buildMultiSelect(key, options){
   const root = document.querySelector(`.ms[data-ms="${key}"]`);
@@ -351,6 +371,8 @@ function initFilters(){
   buildMultiSelect("mod",  uniq(RAW.map(r=>r.module)));
   buildMultiSelect("stat", uniq(RAW.map(effectiveStatus)));
   buildMultiSelect("week", uniq(RAW.map(r=>r.week)));
+  buildMultiSelect("month", MONTH_NAMES.slice());
+  buildMultiSelect("quarter", QUARTERS.slice());
 }
 
 function filtered(){
@@ -360,6 +382,9 @@ function filtered(){
     if(FILTER.mod.length  && !FILTER.mod.includes(r.module)) return false;
     if(FILTER.stat.length && !FILTER.stat.includes(effectiveStatus(r))) return false;
     if(FILTER.week.length && !FILTER.week.includes(r.week)) return false;
+    const m = monthOf(r.openTime) || monthOf(r.due);
+    if(FILTER.month.length && (!m || !FILTER.month.includes(MONTH_NAMES[m - 1]))) return false;
+    if(FILTER.quarter.length && (!m || !FILTER.quarter.includes(quarterOf(m)))) return false;
     if(s){
       const hay = (r.question+" "+r.action+" "+r.remarks+" "+r.description).toLowerCase();
       if(!hay.includes(s)) return false;
