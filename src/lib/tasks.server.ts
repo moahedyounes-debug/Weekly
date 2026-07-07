@@ -135,15 +135,13 @@ function isDefectiveInspectionTask(task: SheetTask) {
 function ensureDefectiveInspectionTask(tasks: SheetTask[]): SheetTask[] {
   const existingIndex = tasks.findIndex(isDefectiveInspectionTask);
   if (existingIndex >= 0) {
-    return tasks.map((task, index) =>
-      index === existingIndex
-        ? { ...task, ...DEFECTIVE_INSPECTION_TASK, rowNumber: task.rowNumber }
-        : task,
-    );
+    // Row exists in sheet — return as-is so edits round-trip correctly.
+    return tasks;
   }
 
   return [{ rowNumber: 0, ...DEFECTIVE_INSPECTION_TASK }, ...tasks];
 }
+
 
 function buildColumnMap(headerRow: string[]): Record<string, number> {
   const map: Record<string, number> = {};
