@@ -66,6 +66,20 @@ export type StrikethroughInput = {
   strikethrough: boolean;
 };
 
+export type AppendTaskInput = {
+  openTime?: string;
+  country?: string;
+  module?: string;
+  question?: string;
+  pic?: string;
+  action?: string;
+  deadline?: string;
+  completionTime?: string;
+  status?: string;
+  remarks?: string;
+  sourceWeek?: string;
+};
+
 let cachedTasks: SheetTask[] | null = null;
 let cachedAt = 0;
 const SHEET_CACHE_MS = 5 * 60 * 1000;
