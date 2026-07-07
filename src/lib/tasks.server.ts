@@ -1,8 +1,8 @@
 const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
-const RANGE = "Sheet1!A1:M";
+const RANGE = "Sheet1!A1:N";
 const SHEET_NAME = "Sheet1";
 const GATEWAY = "https://connector-gateway.lovable.dev/google_sheets/v4";
-const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
+const HEADERS = ["Open Time", "Module", "Question", "PIC", "Management Action", "Completion Time", "Dead Line Time", "Status", "Remarks", "Description", "New Tasks", "Source Week", "Done? (✓)", "Country"] as const;
 
 const HEADER_ALIASES: Record<string, string> = {
   "open time": "openTime", "opening date": "openTime", "opening time": "openTime", "date": "openTime",
@@ -30,9 +30,9 @@ const FIELD_TO_KEY: Record<EditableTaskField, string> = {
 };
 
 const FIELD_TO_COLUMN_INDEX: Record<EditableTaskField, number> = {
-  Status: 6,
-  Remarks: 7,
-  "Done? (✓)": 11,
+  Status: 7,
+  Remarks: 8,
+  "Done? (✓)": 12,
   Question: 2,
   "Management Action": 4,
 };
