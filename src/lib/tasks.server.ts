@@ -21,14 +21,6 @@ const HEADER_ALIASES: Record<string, string> = {
   "country": "country",
 };
 
-const FIELD_TO_KEY: Record<EditableTaskField, string> = {
-  Status: "status",
-  Remarks: "remarks",
-  "Done? (✓)": "done",
-  Question: "question",
-  "Management Action": "action",
-};
-
 const FIELD_TO_COLUMN_INDEX: Record<EditableTaskField, number> = {
   Status: 7,
   Remarks: 8,
@@ -79,6 +71,30 @@ function buildColumnMap(headerRow: string[]): Record<string, number> {
     const field = HEADER_ALIASES[key];
     if (field && map[field] === undefined) map[field] = i;
   });
+
+  // The live sheet includes a Deadline column between Completion Time and Status.
+  // If a header is renamed/missing, keep the dashboard aligned with the known layout.
+  const fallback: Record<string, number> = {
+    openTime: 0,
+    module: 1,
+    question: 2,
+    pic: 3,
+    action: 4,
+    completionTime: 5,
+    deadline: 6,
+    status: 7,
+    remarks: 8,
+    description: 9,
+    newTasks: 10,
+    sourceWeek: 11,
+    done: 12,
+    country: 13,
+  };
+
+  for (const [field, index] of Object.entries(fallback)) {
+    if (map[field] === undefined) map[field] = index;
+  }
+
   return map;
 }
 
@@ -221,7 +237,14 @@ export async function updateTaskInSheetServer(data: UpdateTaskInput) {
 
   if (colIdx === undefined) {
     const { colMap } = await getSheetData();
-    colIdx = colMap[FIELD_TO_KEY[data.field]];
+    const fieldToKey: Record<EditableTaskField, string> = {
+      Status: "status",
+      Remarks: "remarks",
+      "Done? (✓)": "done",
+      Question: "question",
+      "Management Action": "action",
+    };
+    colIdx = colMap[fieldToKey[data.field]];
   }
 
   if (colIdx === undefined) throw new Error(`Unknown field: ${data.field}`);
