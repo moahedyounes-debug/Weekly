@@ -17,7 +17,7 @@ const updateTaskInput = z.object({
   value: z.string(),
 });
 
-export const fetchTasksFromSheet = createServerFn({ method: "GET" }).handler(
+export const fetchTasksFromSheet = createServerFn({ method: "POST" }).handler(
   async (): Promise<SheetTask[]> => {
     try {
       return await fetchTasksFromSheetServer();
