@@ -59,7 +59,7 @@ const updateTaskInput = z.object({
   rowNumber: z.number().int().min(2).optional(),
   rowKey: z.string().min(1).optional(),
   rowKeyIndex: z.number().int().nonnegative().default(0),
-  field: z.enum(["Status", "Remarks", "Done? (✓)"]),
+  field: z.enum(["Status", "Remarks", "Done? (✓)", "Question", "Management Action"]),
   value: z.string(),
 });
 
@@ -202,7 +202,7 @@ export const updateTaskInSheet = createServerFn({ method: "POST" })
 
     if (!rowNumber) throw new Error("Task row not found in sheet");
 
-    const fieldToKey: Record<string, string> = { "Status": "status", "Remarks": "remarks", "Done? (✓)": "done" };
+    const fieldToKey: Record<string, string> = { "Status": "status", "Remarks": "remarks", "Done? (✓)": "done", "Question": "question", "Management Action": "action" };
     const colIdx = colMap[fieldToKey[data.field]];
     if (colIdx === undefined) throw new Error(`Unknown field: ${data.field}`);
 
