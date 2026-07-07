@@ -1,3 +1,5 @@
+import bundledTasks from "../data/tasks.json";
+
 const SHEET_ID = "1vcYIUCE4pJpfN1149CNKpa8XXpLIRzapaISBW1GUMNg";
 const RANGE = "Sheet1!A1:N";
 const SHEET_NAME = "Sheet1";
@@ -63,6 +65,46 @@ export type StrikethroughInput = {
   rowKeyIndex?: number;
   strikethrough: boolean;
 };
+
+let cachedTasks: SheetTask[] | null = null;
+let cachedAt = 0;
+const SHEET_CACHE_MS = 5 * 60 * 1000;
+
+type BundledTask = Partial<Omit<SheetTask, "rowNumber" | "done">> & { done?: boolean | string | null };
+
+function asCell(value: unknown) {
+  const text = String(value ?? "").trim();
+  return text ? text : null;
+}
+
+function fallbackTasksFromBundle(): SheetTask[] {
+  return (bundledTasks as BundledTask[]).map((task) => {
+    const status = asCell(task.status);
+    const doneRaw = task.done;
+    const done =
+      doneRaw === true ||
+      String(doneRaw ?? "").toUpperCase() === "TRUE" ||
+      String(status ?? "").toLowerCase() === "done";
+
+    return {
+      rowNumber: 0,
+      openTime: formatOpenTimeMdd(task.openTime),
+      module: asCell(task.module),
+      question: asCell(task.question),
+      pic: asCell(task.pic),
+      action: asCell(task.action),
+      completionTime: asCell(task.completionTime),
+      deadline: asCell(task.deadline),
+      status,
+      remarks: asCell(task.remarks),
+      description: asCell(task.description),
+      newTasks: asCell(task.newTasks),
+      sourceWeek: asCell(task.sourceWeek),
+      done,
+      country: asCell(task.country),
+    };
+  });
+}
 
 function buildColumnMap(headerRow: string[]): Record<string, number> {
   const map: Record<string, number> = {};
@@ -195,8 +237,7 @@ async function resolveRowNumber(rowNumber?: number, rowKey?: string, rowKeyIndex
   return resolved;
 }
 
-export async function fetchTasksFromSheetServer(): Promise<SheetTask[]> {
-  const { dataRows, colMap } = await getSheetData();
+function rowsToTasks(dataRows: string[][], colMap: Record<string, number>): SheetTask[] {
   const get = (row: string[], field: string) => {
     const idx = colMap[field];
     if (idx === undefined) return null;
@@ -237,6 +278,24 @@ export async function fetchTasksFromSheetServer(): Promise<SheetTask[]> {
         country: get(row, "country"),
       };
     });
+}
+
+export async function fetchTasksFromSheetServer(): Promise<SheetTask[]> {
+  const now = Date.now();
+  if (cachedTasks && now - cachedAt < SHEET_CACHE_MS) return cachedTasks;
+
+  try {
+    const { dataRows, colMap } = await getSheetData();
+    const tasks = rowsToTasks(dataRows, colMap);
+    if (tasks.length) {
+      cachedTasks = tasks;
+      cachedAt = now;
+    }
+    return tasks;
+  } catch (error) {
+    console.error("Unable to refresh Google Sheet rows; using cached or bundled tasks:", error);
+    return cachedTasks?.length ? cachedTasks : fallbackTasksFromBundle();
+  }
 }
 
 export async function updateTaskInSheetServer(data: UpdateTaskInput) {
