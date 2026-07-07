@@ -377,13 +377,13 @@ function Dashboard() {
   const setQuestionFor = (task: DashboardTask, value: string) => {
     if (value === (task.question || "")) return;
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, question: value } : t));
-    void saveField({ ...task, question: value }, "Question", value);
+    void saveField(task, "Question", value);
   };
 
   const setActionFor = (task: DashboardTask, value: string) => {
     if (value === (task.action || "")) return;
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, action: value } : t));
-    void saveField({ ...task, action: value }, "Management Action", value);
+    void saveField(task, "Management Action", value);
   };
 
   const handleSync = async () => {
@@ -711,7 +711,8 @@ function Dashboard() {
                           <TableCell><Badge variant="outline">{t.module || "—"}</Badge></TableCell>
                           <TableCell className="min-w-64 max-w-xs">
                             <Textarea
-                              defaultValue={t.question || ""}
+                              value={t.question || ""}
+                              onChange={(e) => setTasks(prev => prev.map(row => row.id === t.id ? { ...row, question: e.target.value } : row))}
                               onBlur={(e) => setQuestionFor(t, e.target.value)}
                               className={`min-h-9 text-sm ${t.done ? "line-through" : ""}`}
                             />
@@ -719,7 +720,8 @@ function Dashboard() {
                           <TableCell>{t.pic}</TableCell>
                           <TableCell className="min-w-64 max-w-sm">
                             <Textarea
-                              defaultValue={t.action || ""}
+                              value={t.action || ""}
+                              onChange={(e) => setTasks(prev => prev.map(row => row.id === t.id ? { ...row, action: e.target.value } : row))}
                               onBlur={(e) => setActionFor(t, e.target.value)}
                               className="min-h-9 text-sm text-muted-foreground"
                             />
