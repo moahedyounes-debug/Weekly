@@ -120,43 +120,6 @@ function fallbackTasksFromBundle(): SheetTask[] {
   });
 }
 
-const DEFECTIVE_INSPECTION_TASK: Omit<SheetTask, "rowNumber"> = {
-  openTime: "503",
-  country: "KSA",
-  module: "Qulity",
-  question: "Defective parts",
-  pic: "Ahad",
-  action: "Complete Onsite Defective Inspection activity -555",
-  deadline: "Monthly",
-  completionTime: "Monthly",
-  status: "Done",
-  remarks: "5 Sets Plan / 5 Sets Completed.",
-  description: "Waiting for 2 PCB ,parts returned which consumed during month of May.",
-  newTasks: "2 parts on the way 24-May",
-  sourceWeek: "W23",
-  done: true,
-};
-
-function isDefectiveInspectionTask(task: SheetTask) {
-  return (
-    normalizeCell(task.openTime) === "503" &&
-    normalizeCell(task.module) === "qulity" &&
-    normalizeCell(task.question) === "defective parts" &&
-    normalizeCell(task.pic) === "ahad"
-  );
-}
-
-function ensureDefectiveInspectionTask(tasks: SheetTask[]): SheetTask[] {
-  const existingIndex = tasks.findIndex(isDefectiveInspectionTask);
-  if (existingIndex >= 0) {
-    // Row exists in sheet — return as-is so edits round-trip correctly.
-    return tasks;
-  }
-
-  return [{ rowNumber: 0, ...DEFECTIVE_INSPECTION_TASK }, ...tasks];
-}
-
-
 function buildColumnMap(headerRow: string[]): Record<string, number> {
   const map: Record<string, number> = {};
   headerRow.forEach((h, i) => {
@@ -337,7 +300,10 @@ export async function fetchTasksFromSheetServer(options: { forceRefresh?: boolea
 
   try {
     const { dataRows, colMap } = await getSheetData();
-    const tasks = ensureDefectiveInspectionTask(rowsToTasks(dataRows, colMap));
+    // Only show rows that actually exist in Google Sheets. Synthetic rows have
+    // no stable sheet row number and can make the dashboard appear to save an
+    // edit that can never be written back.
+    const tasks = rowsToTasks(dataRows, colMap);
     if (tasks.length) {
       cachedTasks = tasks;
       cachedAt = now;

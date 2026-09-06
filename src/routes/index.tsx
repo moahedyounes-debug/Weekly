@@ -343,7 +343,8 @@ function Dashboard() {
         },
       });
       setSyncStatus("saved");
-    } catch {
+    } catch (error) {
+      console.error(`Unable to save ${field}:`, error);
       setSyncStatus("error");
     }
   };
