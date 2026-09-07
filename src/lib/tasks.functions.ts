@@ -14,7 +14,16 @@ const updateTaskInput = z.object({
   rowNumber: z.number().int().min(2).optional(),
   rowKey: z.string().min(1).optional(),
   rowKeyIndex: z.number().int().nonnegative().default(0),
-  field: z.enum(["Status", "Remarks", "Done? (✓)", "Question", "Management Action"]),
+  field: z.enum([
+    "Opening Date",
+    "Status",
+    "Remarks",
+    "Done? (✓)",
+    "Question",
+    "Management Action",
+    "Dead Line time",
+    "Completion Time",
+  ]),
   value: z.string(),
 });
 

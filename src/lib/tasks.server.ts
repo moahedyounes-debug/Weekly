@@ -24,14 +24,25 @@ const HEADER_ALIASES: Record<string, string> = {
 };
 
 const FIELD_TO_COLUMN_INDEX: Record<EditableTaskField, number> = {
+  "Opening Date": 0,
   Status: 8,
   Remarks: 9,
   "Done? (✓)": 13,
   Question: 3,
   "Management Action": 5,
+  "Dead Line time": 6,
+  "Completion Time": 7,
 };
 
-export type EditableTaskField = "Status" | "Remarks" | "Done? (✓)" | "Question" | "Management Action";
+export type EditableTaskField =
+  | "Opening Date"
+  | "Status"
+  | "Remarks"
+  | "Done? (✓)"
+  | "Question"
+  | "Management Action"
+  | "Dead Line time"
+  | "Completion Time";
 
 export type SheetTask = {
   rowNumber: number;
@@ -322,11 +333,14 @@ export async function updateTaskInSheetServer(data: UpdateTaskInput) {
   if (colIdx === undefined) {
     const { colMap } = await getSheetData();
     const fieldToKey: Record<EditableTaskField, string> = {
+      "Opening Date": "openTime",
       Status: "status",
       Remarks: "remarks",
       "Done? (✓)": "done",
       Question: "question",
       "Management Action": "action",
+      "Dead Line time": "deadline",
+      "Completion Time": "completionTime",
     };
     colIdx = colMap[fieldToKey[data.field]];
   }
