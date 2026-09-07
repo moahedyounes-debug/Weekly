@@ -330,7 +330,9 @@ function Dashboard() {
     });
   }, [filtered, weeks, pics]);
 
-  const saveField = async (task: DashboardTask, field: "Status" | "Remarks" | "Done? (✓)" | "Question" | "Management Action", value: string) => {
+  type EditableField = "Opening Date" | "Status" | "Remarks" | "Done? (✓)" | "Question" | "Management Action" | "Dead Line time" | "Completion Time";
+
+  const saveField = async (task: DashboardTask, field: EditableField, value: string) => {
     setSyncStatus("saving");
     try {
       await updateTask({
@@ -346,6 +348,7 @@ function Dashboard() {
     } catch (error) {
       console.error(`Unable to save ${field}:`, error);
       setSyncStatus("error");
+      throw error;
     }
   };
 
@@ -359,26 +362,40 @@ function Dashboard() {
           strikethrough: strike,
         },
       });
+    } catch (error) {
+      console.error("Unable to update row formatting:", error);
+      setSyncStatus("error");
+      throw error;
+    }
+  };
+
+  const toggleDone = async (task: DashboardTask) => {
+    const done = !task.done;
+    const nextStatus = done ? "Done" : "In process";
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done, status: nextStatus } : t));
+    try {
+      await saveField(task, "Status", nextStatus);
+      await saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
+      await applyStrike(task, done);
+      setSyncStatus("saved");
     } catch {
+      setTasks(prev => prev.map(t => t.id === task.id ? task : t));
       setSyncStatus("error");
     }
   };
 
-  const toggleDone = (task: DashboardTask) => {
-    const done = !task.done;
-    const nextStatus = done ? "Done" : "In process";
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done, status: nextStatus } : t));
-    void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
-    void saveField(task, "Status", nextStatus);
-    void applyStrike(task, done);
-  };
-
-  const setStatusFor = (task: DashboardTask, value: string) => {
+  const setStatusFor = async (task: DashboardTask, value: string) => {
     const done = value === "Done";
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: value, done } : t));
-    void saveField(task, "Status", value);
-    void saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
-    void applyStrike(task, done);
+    try {
+      await saveField(task, "Status", value);
+      await saveField(task, "Done? (✓)", done ? "TRUE" : "FALSE");
+      await applyStrike(task, done);
+      setSyncStatus("saved");
+    } catch {
+      setTasks(prev => prev.map(t => t.id === task.id ? task : t));
+      setSyncStatus("error");
+    }
   };
 
   const setRemarksFor = (task: DashboardTask, value: string) => {
@@ -394,6 +411,16 @@ function Dashboard() {
   const setActionFor = (task: DashboardTask, value: string) => {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, action: value } : t));
     void saveField(task, "Management Action", value);
+  };
+
+  const setDateFor = (task: DashboardTask, field: "openTime" | "deadline" | "completionTime", value: string) => {
+    const sheetField: Record<typeof field, EditableField> = {
+      openTime: "Opening Date",
+      deadline: "Dead Line time",
+      completionTime: "Completion Time",
+    };
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, [field]: value } : t));
+    void saveField(task, sheetField[field], value);
   };
 
   const handleSync = async () => {
@@ -497,8 +524,8 @@ function Dashboard() {
 
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6 grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-            <Input className="md:col-span-4 xl:col-span-8" placeholder="Search task, action, remarks, country..." value={search} onChange={e => setSearch(e.target.value)} />
+          <CardContent className="pt-6 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+            <Input className="sm:col-span-2 lg:col-span-4 2xl:col-span-7" placeholder="Search task, action, remarks, country..." value={search} onChange={e => setSearch(e.target.value)} />
             <MultiSelect options={pics} selected={pic} onChange={setPic} placeholder="All PICs" />
             <MultiSelect options={modules} selected={module} onChange={setModule} placeholder="All Modules" />
             <MultiSelect options={["Done", "In process", "New", "Canceled"]} selected={status} onChange={setStatus} placeholder="All Status" />
@@ -734,6 +761,9 @@ function Dashboard() {
                       <TableHead>Remarks</TableHead>
                       <TableHead>Country</TableHead>
                       <TableHead>Week</TableHead>
+                      <TableHead>Opening Date</TableHead>
+                      <TableHead>Deadline</TableHead>
+                      <TableHead>Completion Time</TableHead>
 
                     </TableRow>
                   </TableHeader>
@@ -743,7 +773,7 @@ function Dashboard() {
                       return (
                         <TableRow key={t.id} className={t.done ? "opacity-60" : ""}>
                           <TableCell>
-                            <Checkbox checked={t.done} onCheckedChange={() => toggleDone(t)} />
+                            <Checkbox checked={t.done} onCheckedChange={() => void toggleDone(t)} />
                           </TableCell>
                           <TableCell><Badge variant="outline">{t.module || "—"}</Badge></TableCell>
                           <TableCell className="min-w-64 max-w-xs">
@@ -786,7 +816,7 @@ function Dashboard() {
                           })()}
                           <TableCell>
 
-                            <Select value={eff} onValueChange={(v) => setStatusFor(t, v)}>
+                            <Select value={eff} onValueChange={(v) => void setStatusFor(t, v)}>
                               <SelectTrigger
                                 className="h-8 w-32 border-0 font-medium text-white"
                                 style={{ background: STATUS_COLORS[eff] }}
@@ -811,11 +841,35 @@ function Dashboard() {
                           </TableCell>
                           <TableCell>{t.country || "—"}</TableCell>
                           <TableCell>{t.sourceWeek}</TableCell>
+                          <TableCell className="min-w-32">
+                            <Input
+                              value={t.openTime || ""}
+                              onChange={(e) => setTasks(prev => prev.map(row => row.id === t.id ? { ...row, openTime: e.target.value } : row))}
+                              onBlur={(e) => setDateFor(t, "openTime", e.target.value)}
+                              aria-label="Opening Date"
+                            />
+                          </TableCell>
+                          <TableCell className="min-w-36">
+                            <Input
+                              value={t.deadline || ""}
+                              onChange={(e) => setTasks(prev => prev.map(row => row.id === t.id ? { ...row, deadline: e.target.value } : row))}
+                              onBlur={(e) => setDateFor(t, "deadline", e.target.value)}
+                              aria-label="Deadline"
+                            />
+                          </TableCell>
+                          <TableCell className="min-w-36">
+                            <Input
+                              value={t.completionTime || ""}
+                              onChange={(e) => setTasks(prev => prev.map(row => row.id === t.id ? { ...row, completionTime: e.target.value } : row))}
+                              onBlur={(e) => setDateFor(t, "completionTime", e.target.value)}
+                              aria-label="Completion Time"
+                            />
+                          </TableCell>
                         </TableRow>
                       );
                     })}
                     {filtered.length === 0 && (
-                      <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
