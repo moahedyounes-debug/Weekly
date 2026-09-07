@@ -348,6 +348,7 @@ function Dashboard() {
     } catch (error) {
       console.error(`Unable to save ${field}:`, error);
       setSyncStatus("error");
+      throw error;
     }
   };
 
@@ -760,6 +761,9 @@ function Dashboard() {
                       <TableHead>Remarks</TableHead>
                       <TableHead>Country</TableHead>
                       <TableHead>Week</TableHead>
+                      <TableHead>Opening Date</TableHead>
+                      <TableHead>Deadline</TableHead>
+                      <TableHead>Completion Time</TableHead>
 
                     </TableRow>
                   </TableHeader>
@@ -865,7 +869,7 @@ function Dashboard() {
                       );
                     })}
                     {filtered.length === 0 && (
-                      <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">No tasks match the filters.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
